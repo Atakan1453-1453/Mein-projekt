@@ -1,0 +1,165 @@
+{
+ "duration": 1080.463,
+ "voice": [
+  {
+   "index": 0,
+   "key": "intro",
+   "start": 6.0
+  },
+  {
+   "index": 1,
+   "key": "europa",
+   "start": 56.169
+  },
+  {
+   "index": 2,
+   "key": "strategie",
+   "start": 93.486
+  },
+  {
+   "index": 3,
+   "key": "festung",
+   "start": 132.186
+  },
+  {
+   "index": 4,
+   "key": "erster_angriff",
+   "start": 163.06
+  },
+  {
+   "index": 5,
+   "key": "nusret",
+   "start": 196.459
+  },
+  {
+   "index": 6,
+   "key": "maerz_a",
+   "start": 228.31
+  },
+  {
+   "index": 7,
+   "key": "maerz_b",
+   "start": 253.785
+  },
+  {
+   "index": 8,
+   "key": "maerz_c",
+   "start": 292.125
+  },
+  {
+   "index": 9,
+   "key": "aufmarsch",
+   "start": 332.196
+  },
+  {
+   "index": 10,
+   "key": "verteidigung",
+   "start": 368.764
+  },
+  {
+   "index": 11,
+   "key": "helles",
+   "start": 394.527
+  },
+  {
+   "index": 12,
+   "key": "anzac",
+   "start": 432.968
+  },
+  {
+   "index": 13,
+   "key": "kemal",
+   "start": 461.574
+  },
+  {
+   "index": 14,
+   "key": "kumkale",
+   "start": 493.379
+  },
+  {
+   "index": 15,
+   "key": "kirte",
+   "start": 520.572
+  },
+  {
+   "index": 16,
+   "key": "kirte3",
+   "start": 555.173
+  },
+  {
+   "index": 17,
+   "key": "mai19",
+   "start": 584.854
+  },
+  {
+   "index": 18,
+   "key": "waffenruhe",
+   "start": 614.548
+  },
+  {
+   "index": 19,
+   "key": "see",
+   "start": 638.795
+  },
+  {
+   "index": 20,
+   "key": "sommer",
+   "start": 672.701
+  },
+  {
+   "index": 21,
+   "key": "lonepine",
+   "start": 698.969
+  },
+  {
+   "index": 22,
+   "key": "nek",
+   "start": 729.155
+  },
+  {
+   "index": 23,
+   "key": "conk",
+   "start": 751.834
+  },
+  {
+   "index": 24,
+   "key": "kemal_conk",
+   "start": 778.677
+  },
+  {
+   "index": 25,
+   "key": "suvla",
+   "start": 807.434
+  },
+  {
+   "index": 26,
+   "key": "anafarta",
+   "start": 835.478
+  },
+  {
+   "index": 27,
+   "key": "herbst",
+   "start": 875.687
+  },
+  {
+   "index": 28,
+   "key": "rueckzug",
+   "start": 907.675
+  },
+  {
+   "index": 29,
+   "key": "bilanz",
+   "start": 951.001
+  },
+  {
+   "index": 30,
+   "key": "erbe",
+   "start": 993.21
+  },
+  {
+   "index": 31,
+   "key": "gedenken",
+   "start": 1027.636
+  }
+ ]
+}
