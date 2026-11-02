@@ -139,7 +139,7 @@ def main():
     ap.add_argument("--contact", action="store_true")
     ap.add_argument("--from", dest="t0", type=float, default=0)
     ap.add_argument("--to", dest="t1", type=float, default=None)
-    ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--workers", type=int, default=3)  # je Prozess ca. 3,6 GB RAM
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
