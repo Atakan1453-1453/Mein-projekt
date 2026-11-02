@@ -27,7 +27,7 @@ def main():
     ap.add_argument("--plan", required=True)
     ap.add_argument("--voice-dir", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--bed-gain", type=float, default=1.5)
+    ap.add_argument("--bed-gain", type=float, default=2.2)
     ap.add_argument("--voice-gain", type=float, default=1.25)
     a = ap.parse_args()
     plan = json.load(open(a.plan))
