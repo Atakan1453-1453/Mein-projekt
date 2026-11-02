@@ -1,5 +1,7 @@
 # Galerie Königshof Mettmann – 60-Sekunden-Präsentationsvideo
 
+> Weiteres Projekt in diesem Repo: [Çanakkale 1915 – 18-minütige Karten-Doku](canakkale/README.md)
+
 **Fertiges Video:** [`output/galerie-koenigshof-mettmann-60s.mp4`](output/galerie-koenigshof-mettmann-60s.mp4)
 (1920×1080, 30 fps, H.264/AAC, 60 s, ca. 8 MB)
 
