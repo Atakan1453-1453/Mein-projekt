@@ -6,10 +6,18 @@ heruntergeladen werden können).
   python3 mix_final.py --video video.mp4 --bed bed.ogg --plan voice_plan.json --voice-dir voice --out final.mp4
 
 voice/NN.mp3 = Sprachaufnahme Nr. NN in der Reihenfolge von narration.SEGMENTS.
+Die Sprachspur wird aus Stille + Aufnahmen aneinandergereiht (schnell), leicht komprimiert und
+über die Musik gelegt; ein Limiter verhindert Übersteuerung.
 """
 import argparse
 import json
 import subprocess
+
+
+def duration(path):
+    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+                         capture_output=True, text=True, check=True).stdout
+    return float(out.strip())
 
 
 def main():
@@ -19,23 +27,26 @@ def main():
     ap.add_argument("--plan", required=True)
     ap.add_argument("--voice-dir", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--bed-gain", type=float, default=1.4)
+    ap.add_argument("--bed-gain", type=float, default=1.5)
+    ap.add_argument("--voice-gain", type=float, default=1.25)
     a = ap.parse_args()
     plan = json.load(open(a.plan))
-    voices = sorted(plan["voice"], key=lambda v: v["index"])
+    voices = sorted(plan["voice"], key=lambda v: v["start"])
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", a.video, "-i", a.bed]
-    for v in voices:
-        cmd += ["-i", f"{a.voice_dir}/{v['index']:02d}.mp3"]
-    parts = []
-    labels = []
+    parts, seq = [], []
+    cursor = 0.0
     for k, v in enumerate(voices):
-        ms = int(round(v["start"] * 1000))
-        parts.append(f"[{k + 2}:a]aresample=48000,aformat=channel_layouts=stereo,adelay={ms}|{ms}[v{k}]")
-        labels.append(f"[v{k}]")
-    parts.append("".join(labels) + f"amix=inputs={len(voices)}:normalize=0:dropout_transition=0,"
-                 "highpass=f=70,acompressor=threshold=0.12:ratio=2.5:attack=8:release=180:makeup=1.6[vox]")
-    parts.append(f"[1:a]aresample=48000,volume={a.bed_gain}[bed]")
-    parts.append("[bed][vox]amix=inputs=2:normalize=0:duration=first,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[a]")
+        f = f"{a.voice_dir}/{v['index']:02d}.mp3"
+        cmd += ["-i", f]
+        gap = max(0.0, v["start"] - cursor)
+        parts.append(f"anullsrc=r=48000:cl=stereo,atrim=duration={gap:.4f}[s{k}]")
+        parts.append(f"[{k + 2}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[v{k}]")
+        seq += [f"[s{k}]", f"[v{k}]"]
+        cursor = v["start"] + duration(f)
+    parts.append("".join(seq) + f"concat=n={len(seq)}:v=0:a=1,highpass=f=70,"
+                 f"acompressor=threshold=0.12:ratio=2.5:attack=8:release=180:makeup=1.4,volume={a.voice_gain}[vox]")
+    parts.append(f"[1:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,volume={a.bed_gain}[bed]")
+    parts.append("[bed][vox]amix=inputs=2:normalize=0:duration=first,alimiter=limit=0.89:level=false[a]")
     cmd += ["-filter_complex", ";".join(parts), "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
             "-t", str(plan["duration"]), "-movflags", "+faststart", a.out]
     subprocess.run(cmd, check=True)
