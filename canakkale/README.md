@@ -47,7 +47,7 @@ Voraussetzungen: Python 3 mit `skia-python numpy pillow scipy rasterio cairosvg 
 export CNK_DATA=./data CNK_CACHE=./cache CNK_OUT=./out
 python3 prep_data.py                    # Karten bauen (Downloads ca. 1 GB, 5–10 min)
 python3 render.py --stills 260,450,990  # Testbilder
-python3 render.py --workers 4           # Video ohne Ton → out/canakkale_video.mp4
+python3 render.py --workers 3           # Video ohne Ton (je Prozess ca. 3,6 GB RAM) → out/canakkale_video.mp4
 python3 music.py                        # out/music.wav, out/sfx.wav, out/voice_plan.json
 # Sprachdateien als voice/00.mp3 … voice/31.mp3 ablegen (Liste in voice_jobs.json), dann:
 python3 mix_final.py --video out/canakkale_video.mp4 --bed out/bed.ogg --plan out/voice_plan.json --voice-dir voice --out canakkale-1915.mp4
@@ -85,5 +85,9 @@ auf dem Gedenkstein von Arıburnu (1934). Bei Schlachten, deren Stärke unbekann
 * Höhendaten: AWS Terrain Tiles (Mapzen; SRTM, GMTED, ETOPO1)
 * Grenzen 1914: [historical-basemaps](https://github.com/aourednik/historical-basemaps) (A. Ourednik), Landflächen: Natural Earth
 * Flaggen: [flag-icons](https://github.com/lipis/flag-icons) (MIT), Schriften: Cinzel, Barlow (SIL OFL, siehe `assets/`)
+* Flagge Österreich-Ungarn 1869 (`assets/flags/ah_1869.svg`, daraus `assets/emblems/ah_flag.png`): OpenFront (CC BY-SA 4.0,
+  siehe `assets/flags/LICENSE-OpenFront.txt`)
+* Doppeladler Russisches Reich (`assets/emblems/russia_eagle.png`): aus der vom Auftraggeber gelieferten Referenzkarte
+  „Europa 1914“ ausgeschnitten und bereinigt
 * Sprecher: KI-Stimme „Alistair“ (ElevenLabs v4 über Higgsfield)
 * Musik: eigene algorithmische Komposition, gespielt mit dem freien Soundfont FluidR3_GM
