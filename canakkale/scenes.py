@@ -32,7 +32,7 @@ P = dict(
     suvla=(40.3000, 26.2380), nibrunesi=(40.2740, 26.2420), saltlake=(40.2950, 26.2620), scimitar=(40.2855, 26.2900),
     hill60=(40.2735, 26.2770), anafarta=(40.2820, 26.3530), kiretch=(40.3330, 26.2900), bigali=(40.2290, 26.3530),
     rumeli_mec=(40.1380, 26.3700), hamidiye=(40.1300, 26.4090), cimenlik=(40.1478, 26.4022), kepez=(40.1050, 26.3960),
-    erenkoy=(40.0820, 26.3480), mudros=(39.8700, 25.2700), imbros=(40.1700, 25.8500), tenedos=(39.8300, 26.0500),
+    erenkoy=(40.0700, 26.3720), mudros=(39.8700, 25.2700), imbros=(40.1700, 25.8500), tenedos=(39.8300, 26.0500),
     istanbul=(41.0100, 28.9800),
 )
 
@@ -153,26 +153,228 @@ class Timeline:
 
 
 def countries_layer(tl, t0, t1, central_on, entente_on, ottoman_on, bulgaria_on=None):
+    """Bündniskarte als Flaggenkarte (Länder mit ihrer Flagge von 1914 gefüllt)."""
     paths = E.load_countries()
-    cp = E.hexc("#b8483c", 0.50)
-    en = E.hexc("#3f6fb3", 0.48)
-    neutral = E.hexc("#8a8a80", 0.10)
-    central = ["German Empire", "Austro-Hungarian Empire"]
-    entente = ["United Kingdom of Great Britain and Ireland", "France", "Russian Empire", "Serbia", "Montenegro",
-               "Belgium", "Grand Duchy of Finland"]
-    groups = []
+    thrace = E.thrace_path()
+    gray = E.hexc("#8a8a80", 0.10)
+    red = E.hexc("#e30a17")
+    blue_ru = E.hexc("#0039a6")
+    spec = {
+        "German Empire": dict(flag="de1871", side="cp", on=central_on),
+        "Austro-Hungarian Empire": dict(flag="ah1869", side="cp", on=central_on),
+        "Ottoman Empire": dict(flag="tr", base=red, rect=(33.0, 27.0, 43.6, 46.0), side="cp", on=ottoman_on),
+        "United Kingdom of Great Britain and Ireland": dict(flag="gb", rect=(49.9, -10.6, 58.7, 1.8), side="en", on=entente_on),
+        "France": dict(flag="fr", side="en", on=entente_on),
+        "Russian Empire": dict(flag="ru1914", base=blue_ru, rect=(44.0, 20.0, 60.0, 60.0), side="en", on=entente_on),
+        "Grand Duchy of Finland": dict(flag="ru1914", base=blue_ru, rect=(44.0, 20.0, 60.0, 60.0), side="en", on=entente_on),
+        "Georgia": dict(base=blue_ru, side="en", on=entente_on),
+        "Armenia": dict(base=blue_ru, side="en", on=entente_on),
+        "Azerbaijan": dict(base=blue_ru, side="en", on=entente_on),
+        "Serbia": dict(flag="rs", side="en", on=entente_on),
+        "Montenegro": dict(flag="me", side="en", on=entente_on),
+        "Belgium": dict(flag="be", side="en", on=entente_on),
+    }
+    entries = []
     for name, path in paths.items():
-        if name in central:
-            groups.append((path, cp, central_on, 1e9))
-        elif name in entente:
-            groups.append((path, en, entente_on, 1e9))
-        elif name == "Ottoman Empire":
-            groups.append((path, E.hexc("#c83a2c", 0.62), ottoman_on, 1e9))
-        elif name == "Bulgaria" and bulgaria_on:
-            groups.append((path, cp, bulgaria_on, 1e9))
-        else:
-            groups.append((path, neutral, t0, 1e9))
-    return Countries(groups, t0, t1)
+        if name == "Bulgaria":
+            p = skia.Op(path, thrace, skia.PathOp.kDifference_PathOp) or path
+            entries.append(dict(path=p, base=gray, t_on=t0))
+            if bulgaria_on:
+                entries.append(dict(path=p, flag="bg", side="cp", t_on=bulgaria_on))
+            continue
+        sp = spec.get(name)
+        if sp is None:
+            entries.append(dict(path=path, base=gray, t_on=t0))
+            continue
+        entries.append(dict(path=path, flag=sp.get("flag"), base=sp.get("base"), rect=sp.get("rect"), side=sp["side"], t_on=sp["on"]))
+    o = spec["Ottoman Empire"]
+    entries.append(dict(path=thrace, flag="tr", base=red, rect=o["rect"], side="cp", t_on=ottoman_on))
+    return E.FlagCountries(entries, t0, t1)
+
+
+def bearing(a, b):
+    dy = b[0] - a[0]
+    dx = (b[1] - a[1]) * math.cos(math.radians(a[0]))
+    return math.degrees(math.atan2(dx, dy)) % 360
+
+
+def add_battles(T):
+    """Schlachtfelder: Figuren (1 Figur = 1 Soldat), Kämpfe, Gebietskontrolle."""
+    U = E.Unit
+    w = T.w
+
+    # ---------------- Gebietskontrolle ab der Landung (ganz leicht rot = osmanisch, blau = alliiert)
+    helles_small = [(40.0440, 26.163), (40.0565, 26.166), (40.0560, 26.186), (40.0515, 26.198), (40.0470, 26.200), (40.0430, 26.186)]
+    helles_may = [(40.073, 26.172), (40.0715, 26.200), (40.0665, 26.221), (40.0625, 26.240), (40.0585, 26.252), (40.050, 26.236),
+                  (40.044, 26.200), (40.040, 26.178), (40.050, 26.160), (40.062, 26.166)]
+    helles_jul = [(40.086, 26.186), (40.082, 26.205), (40.074, 26.225), (40.068, 26.245), (40.061, 26.256), (40.050, 26.236),
+                  (40.044, 26.200), (40.040, 26.178), (40.050, 26.160), (40.068, 26.168)]
+    anzac_aug = [(40.231, 26.281), (40.234, 26.291), (40.245, 26.296), (40.255, 26.296), (40.264, 26.291), (40.274, 26.281),
+                 (40.286, 26.286), (40.300, 26.292), (40.316, 26.290), (40.332, 26.282), (40.338, 26.262), (40.330, 26.222),
+                 (40.300, 26.222), (40.270, 26.232), (40.250, 26.262), (40.240, 26.276)]
+    suvla_init = [(40.270, 26.238), (40.288, 26.256), (40.310, 26.258), (40.326, 26.242), (40.312, 26.220), (40.282, 26.222)]
+    kumkale_fr = [(39.996, 26.190), (40.009, 26.193), (40.011, 26.214), (39.999, 26.216)]
+    t_land = T.vstart["helles"] - 0.5
+    t_end = T.end("rueckzug") + 1.5
+    areas = [
+        (helles_small, t_land + 30, w("kirte", 7.6)),
+        (helles_may, w("kirte", 7.6), w("kirte3", 13.0)),
+        (helles_jul, w("kirte3", 13.0), w("rueckzug", 23.0)),
+        (ANZAC_AREA, w("anzac", 26.0), w("conk", 1.0)),
+        (anzac_aug, w("conk", 1.0), w("rueckzug", 8.4)),
+        (suvla_init, w("suvla", 6.0), w("anafarta", 1.0)),
+        (kumkale_fr, w("kumkale", 3.0), w("kumkale", 11.5)),
+    ]
+    T.add(E.ControlMap(t_land, t_end, areas))
+
+    def troops(units, t0, t1, enemies):
+        T.add(E.Troops(units, t0, t1, enemies))
+
+    # ---------------- 25. April · Seddülbahir / Kap Helles
+    k = "helles"
+    beaches = {"S": (P["sbeach"], (40.035, 26.235), 1500, 200), "V": (P["vbeach"], (40.028, 26.180), 3000, 1300),
+               "W": (P["wbeach"], (40.040, 26.150), 3000, 900), "X": (P["xbeach"], (40.064, 26.150), 2000, 250),
+               "Y": (P["ybeach"], (40.092, 26.170), 2500, 350)}
+    units, gb_idx = [], {}
+    for i, (name, (dst, src, n, loss)) in enumerate(beaches.items()):
+        f = bearing(src, dst)
+        inland = (dst[0] + (dst[0] - src[0]) * 0.12, dst[1] + (dst[1] - src[1]) * 0.12)
+        gb_idx[name] = len(units)
+        units.append(U("al", n, [(w(k, 6.4), *src), (w(k, 11.8) + i * 0.3, *dst), (w(k, 34.0), *inland)], facing=f, area=40,
+                       losses=[(w(k, 28.4), loss)], fire=[(w(k, 12.4), T.end(k) + 1)], nation="gb", t1=T.end(k) + 1, seed=i))
+    tv = len(units); units.append(U("tr", 300, [(w(k, 6.0), 40.0475, 26.1888)], facing=215, area=45, losses=[(w(k, 31.4), 200)],
+                                    fire=[(w(k, 12.4), T.end(k) + 1)], t1=T.end(k) + 1, seed=11))
+    tw = len(units); units.append(U("tr", 300, [(w(k, 6.0), 40.0528, 26.1772)], facing=250, area=45, losses=[(w(k, 31.4), 200)],
+                                    fire=[(w(k, 13.8), T.end(k) + 1)], t1=T.end(k) + 1, seed=12))
+    tres = len(units); units.append(U("tr", 3900, [(w(k, 16.0), 40.0700, 26.2060), (w(k, 24.0), 40.0625, 26.1980)], facing=215, area=60,
+                                      losses=[(w(k, 31.4), 1500)], fire=[(w(k, 20.0), T.end(k) + 1)], t1=T.end(k) + 1, seed=13, arrive=5.0))
+    troops(units, w(k, 6.0), T.end(k) + 1.2,
+           [(gb_idx["V"], tv), (gb_idx["W"], tw), (gb_idx["X"], tres), (gb_idx["Y"], tres), (gb_idx["S"], tres)])
+
+    # ---------------- 25. April · Arıburnu
+    k, k2 = "anzac", "kemal"
+    cove = P["anzac"]
+    units = [
+        U("al", 6000, [(w(k, 1.4), 40.2290, 26.2610), (w(k, 8.0), *cove), (w(k, 18.0), *P["plateau400"])], facing=70, area=35,
+          losses=[(w(k2, 21.0), 800)], fire=[(w(k, 14.8), T.end(k2) + 1)], nation="au", t1=T.end(k2) + 1, seed=21, arrive=6.0),
+        U("al", 5000, [(w(k, 2.0), 40.2310, 26.2620), (w(k, 8.6), 40.2420, 26.2815), (w(k, 18.5), *P["battleship"])], facing=65, area=35,
+          losses=[(w(k2, 21.0), 600)], fire=[(w(k, 14.8), T.end(k2) + 1)], nation="au", t1=T.end(k2) + 1, seed=22, arrive=6.0),
+        U("al", 5000, [(w(k, 2.6), 40.2335, 26.2640), (w(k, 9.2), 40.2445, 26.2820), (w(k, 19.0), 40.2505, 26.2990)], facing=55, area=35,
+          losses=[(w(k2, 21.0), 600)], fire=[(w(k, 14.8), T.end(k2) + 1)], nation="nz", t1=T.end(k2) + 1, seed=23, arrive=6.0),
+        U("tr", 2000, [(w(k, 10.0), 40.2405, 26.3035)], facing=270, area=50, losses=[(w(k2, 21.2), 800)],
+          fire=[(w(k, 12.0), T.end(k2) + 1)], t1=T.end(k2) + 1, seed=24),
+        U("tr", 8000, [(w(k, 22.4), *P["bigali"]), (w(k, 27.0), 40.2500, 26.3110)], facing=280, area=45, losses=[(w(k2, 21.2), 1200)],
+          fire=[(w(k, 27.0), T.end(k2) + 1)], t1=T.end(k2) + 1, seed=25, arrive=4.0),
+    ]
+    troops(units, w(k, 1.4), T.end(k2) + 1.2, [(0, 3), (1, 3), (2, 4), (1, 4)])
+
+    # ---------------- Kumkale
+    k = "kumkale"
+    units = [U("al", 3000, [(w(k, 0.6), 39.9900, 26.1500), (w(k, 2.4), 40.0035, 26.1960), (w(k, 6.0), 40.0050, 26.2080),
+                            (w(k, 10.6), 40.0040, 26.2000), (w(k, 12.0), 39.9930, 26.1560)], facing=70, area=40,
+               losses=[(w(k, 9.4), 786)], fire=[(w(k, 4.0), w(k, 10.6))], nation="fr", t1=w(k, 12.0), seed=31),
+             U("tr", 2600, [(w(k, 3.0), 40.0110, 26.2300)], facing=250, area=50, losses=[(w(k, 9.6), 1735)],
+               fire=[(w(k, 4.0), w(k, 10.8))], t1=w(k, 12.0), seed=32)]
+    troops(units, w(k, 0.6), w(k, 12.2), [(0, 1)])
+
+    # ---------------- Kirte I und II
+    k = "kirte"
+    units = [U("al", 10000, [(w(k, 9.5), 40.0625, 26.1950), (w(k, 14.0), 40.0730, 26.2040)], facing=20, area=45,
+               losses=[(w(k, 14.5), 2000)], fire=[(w(k, 10.5), w(k, 15.6))], nation="gb", t1=w(k, 15.8), seed=41),
+             U("al", 4000, [(w(k, 10.0), 40.0595, 26.2330), (w(k, 14.0), 40.0670, 26.2400)], facing=20, area=45,
+               losses=[(w(k, 14.6), 1000)], fire=[(w(k, 10.5), w(k, 15.6))], nation="fr", t1=w(k, 15.8), seed=42),
+             U("tr", 7000, [(w(k, 9.0), 40.0850, 26.2160)], facing=200, area=55, losses=[(w(k, 14.8), 2400)],
+               fire=[(w(k, 10.5), w(k, 15.6))], t1=w(k, 15.8), seed=43)]
+    troops(units, w(k, 9.0), w(k, 16.0), [(0, 2), (1, 2)])
+    units = [U("al", 13000, [(w(k, 17.6), 40.0640, 26.1990), (w(k, 26.0), 40.0715, 26.2070)], facing=20, area=42,
+               losses=[(w(k, 26.9), 3000)], fire=[(w(k, 19.5), w(k, 29.0))], nation="gb", t1=T.end(k) + 0.5, seed=44),
+             U("al", 7000, [(w(k, 17.6), 40.0600, 26.2360), (w(k, 26.0), 40.0665, 26.2420)], facing=20, area=42,
+               losses=[(w(k, 26.9), 2000)], fire=[(w(k, 19.5), w(k, 29.0))], nation="fr", t1=T.end(k) + 0.5, seed=45),
+             U("al", 5000, [(w(k, 18.6), 40.0655, 26.2180), (w(k, 26.0), 40.0735, 26.2220)], facing=20, area=42,
+               losses=[(w(k, 26.9), 1500)], fire=[(w(k, 19.5), w(k, 29.0))], nation="au", t1=T.end(k) + 0.5, seed=46),
+             U("tr", 20000, [(w(k, 17.6), 40.0840, 26.2210)], facing=200, area=50, aspect=4.0, losses=[(w(k, 27.4), 2000)],
+               fire=[(w(k, 19.5), w(k, 29.0))], t1=T.end(k) + 0.5, seed=47)]
+    troops(units, w(k, 17.6), T.end(k) + 0.6, [(0, 3), (1, 3), (2, 3)])
+
+    # ---------------- Kirte III und Zığındere
+    k = "kirte3"
+    units = [U("al", 20000, [(w(k, 2.6), 40.0650, 26.2040), (w(k, 8.6), 40.0760, 26.2110), (w(k, 11.6), 40.0700, 26.2070)], facing=20,
+               area=40, losses=[(w(k, 10.0), 4500)], fire=[(w(k, 4.8), w(k, 11.8))], nation="gb", t1=w(k, 12.2), seed=51),
+             U("al", 10000, [(w(k, 4.2), 40.0605, 26.2380), (w(k, 8.6), 40.0680, 26.2430)], facing=20, area=40,
+               losses=[(w(k, 10.2), 2000)], fire=[(w(k, 4.8), w(k, 11.8))], nation="fr", t1=w(k, 12.2), seed=52),
+             U("tr", 25000, [(w(k, 5.6), 40.0840, 26.2220), (w(k, 9.6), 40.0840, 26.2220), (w(k, 11.6), 40.0790, 26.2170)], facing=200,
+               area=45, aspect=4.0, losses=[(w(k, 11.0), 3000)], fire=[(w(k, 4.8), w(k, 11.8))], t1=w(k, 12.2), seed=53)]
+    troops(units, w(k, 2.6), w(k, 12.4), [(0, 2), (1, 2)])
+    units = [U("al", 8000, [(w(k, 12.2), 40.0770, 26.1990), (w(k, 16.0), 40.0830, 26.2020)], facing=15, area=40,
+               losses=[(w(k, 19.2), 3800)], fire=[(w(k, 14.0), w(k, 22.5))], nation="gb", t1=T.end(k) + 1, seed=54),
+             U("tr", 20000, [(w(k, 12.6), 40.0930, 26.2130), (w(k, 18.0), 40.0870, 26.2070)], facing=200, area=45,
+               losses=[(w(k, 18.4), 14000)], fire=[(w(k, 14.0), w(k, 22.5))], t1=T.end(k) + 1, seed=55)]
+    troops(units, w(k, 12.2), T.end(k) + 1.2, [(0, 1)])
+
+    # ---------------- 19. Mai · Arıburnu
+    k = "mai19"
+    units = [U("tr", 42000, [(w(k, 6.5), 40.2440, 26.3150), (w(k, 16.0), 40.2425, 26.3040)], facing=265, area=40, aspect=3.0,
+               losses=[(w(k, 20.0), 10000)], fire=[(w(k, 8.0), w(k, 23.5))], t1=T.end(k) + 1, seed=61, arrive=4.0),
+             U("al", 12300, [(w(k, 12.0), 40.2400, 26.2870)], facing=80, area=28, losses=[(w(k, 25.8), 470)],
+               fire=[(w(k, 8.0), w(k, 23.5))], nation="au", t1=T.end(k) + 1, seed=62),
+             U("al", 5000, [(w(k, 12.0), 40.2470, 26.2895)], facing=80, area=28, losses=[(w(k, 25.8), 170)],
+               fire=[(w(k, 8.0), w(k, 23.5))], nation="nz", t1=T.end(k) + 1, seed=63)]
+    troops(units, w(k, 6.5), T.end(k) + 1.2, [(1, 0), (2, 0)])
+
+    # ---------------- August · Kanlısırt / Lone Pine
+    k = "lonepine"
+    units = [U("al", 4600, [(w(k, 4.5), 40.2290, 26.2840), (w(k, 9.5), 40.2310, 26.2895)], facing=80, area=22,
+               losses=[(w(k, 21.2), 2277)], fire=[(w(k, 6.5), w(k, 26.0))], nation="au", t1=T.end(k) + 1, seed=71),
+             U("tr", 9000, [(w(k, 4.0), 40.2325, 26.2950), (w(k, 12.0), 40.2318, 26.2925)], facing=260, area=24,
+               losses=[(w(k, 24.4), 6000)], fire=[(w(k, 6.5), w(k, 26.0))], t1=T.end(k) + 1, seed=72, arrive=6.0)]
+    troops(units, w(k, 4.0), T.end(k) + 1.2, [(0, 1)])
+
+    # ---------------- The Nek (600 Leichte Reiter, vier Wellen)
+    k = "nek"
+    waves = []
+    for i in range(4):
+        waves.append(U("al", 150, [(w(k, 2.0), 40.2458 + 0.00008 * i, 26.2880 - 0.0002 * i),
+                                   (w(k, 8.8) + i * 0.6, 40.2458 + 0.00008 * i, 26.2880 - 0.0002 * i),
+                                   (w(k, 11.0) + i * 0.6, 40.2466, 26.2902)], facing=75, area=8, aspect=6.0,
+                       losses=[(w(k, 14.2), 93)], fire=[(w(k, 9.0), w(k, 13.5))], nation="au", t1=T.end(k) + 1, seed=80 + i))
+    waves.append(U("tr", 300, [(w(k, 2.0), 40.2474, 26.2925)], facing=255, area=10, aspect=4.0, fire=[(w(k, 8.8), w(k, 14.0))],
+                   t1=T.end(k) + 1, seed=85))
+    troops(waves, w(k, 2.0), T.end(k) + 1.2, [(0, 4), (1, 4), (2, 4), (3, 4)])
+
+    # ---------------- Conkbayırı · 8. und 10. August
+    k = "conk"
+    units = [U("al", 760, [(w(k, 3.4), 40.2620, 26.2900), (w(k, 14.7), 40.2545, 26.3070)], facing=120, area=18,
+               losses=[(w(k, 23.6), 690)], fire=[(w(k, 15.8), T.end(k))], nation="nz", t1=T.end(k) + 1, seed=91),
+             U("al", 3000, [(w(k, 3.4), 40.2680, 26.2760), (w(k, 16.0), 40.2600, 26.3120)], facing=110, area=30,
+               fire=[(w(k, 16.0), T.end(k))], nation="gb", t1=T.end(k) + 1, seed=92),
+             U("tr", 3000, [(w(k, 12.0), 40.2575, 26.3170)], facing=240, area=30, fire=[(w(k, 15.8), T.end(k))], t1=T.end(k) + 1, seed=93)]
+    troops(units, w(k, 3.4), T.end(k) + 1.2, [(0, 2), (1, 2)])
+    k = "kemal_conk"
+    units = [U("al", 1500, [(w(k, 6.0), 40.2540, 26.3082)], facing=90, area=22, losses=[(w(k, 16.0), 1200)],
+               fire=[(w(k, 10.0), w(k, 18.5))], nation="gb", t1=w(k, 19.0), seed=94),
+             U("tr", 6000, [(w(k, 9.4), 40.2560, 26.3300), (w(k, 17.3), 40.2548, 26.3110)], facing=270, area=30, losses=[(w(k, 15.0), 1500)],
+               fire=[(w(k, 11.0), w(k, 18.5))], t1=T.end(k) + 1, seed=95, arrive=3.0)]
+    troops(units, w(k, 6.0), T.end(k) + 1.2, [(0, 1)])
+
+    # ---------------- Suvla / Anafartalar
+    k = "suvla"
+    land = [((40.290, 26.190), (40.293, 26.236), 7000), ((40.305, 26.185), (40.305, 26.226), 7000), ((40.272, 26.205), (40.275, 26.240), 6000)]
+    units = []
+    for i, (src, dst, n) in enumerate(land):
+        units.append(U("al", n, [(w(k, 1.8) + i * 0.3, *src), (w(k, 6.5) + i * 0.3, *dst)], facing=bearing(src, dst), area=40,
+                       nation="gb", t1=T.end(k) + 1, seed=101 + i))
+    units.append(U("tr", 1500, [(w(k, 8.4), 40.3000, 26.3000)], facing=260, area=40, fire=[(w(k, 10.0), T.end(k))], t1=T.end(k) + 1, seed=104))
+    troops(units, w(k, 1.8), T.end(k) + 1.2, [])
+    k = "anafarta"
+    units = [U("al", 20000, [(w(k, 0.0), 40.2950, 26.2480), (w(k, 9.0), 40.2920, 26.2720)], facing=95, area=40, losses=[(w(k, 11.0), 2500)],
+               fire=[(w(k, 9.0), w(k, 13.2))], nation="gb", t1=w(k, 14.0), seed=111),
+             U("tr", 10000, [(w(k, 3.4), 40.2950, 26.3500), (w(k, 9.0), 40.2950, 26.3050)], facing=265, area=45, losses=[(w(k, 11.5), 1500)],
+               fire=[(w(k, 9.0), w(k, 13.2))], t1=w(k, 14.0), seed=112, arrive=4.0),
+             U("al", 14300, [(w(k, 16.6), 40.2830, 26.2660), (w(k, 22.5), 40.2850, 26.2840)], facing=80, area=32,
+               losses=[(w(k, 25.4), 5300)], fire=[(w(k, 17.0), T.end(k))], nation="gb", t1=T.end(k) + 1, seed=113),
+             U("tr", 8000, [(w(k, 15.0), 40.2885, 26.2970)], facing=255, area=35, losses=[(w(k, 26.0), 2600)],
+               fire=[(w(k, 17.0), T.end(k))], t1=T.end(k) + 1, seed=114)]
+    troops(units, w(k, 0.0), T.end(k) + 1.2, [(0, 1), (2, 3)])
 
 
 # ======================================================================= Aufbau
@@ -298,26 +500,30 @@ def build():
     s = T.say("erster_angriff", pre=0.4)
     T.add(DateStamp("3. November 1914", "Einfahrt der Dardanellen", s, T.w("erster_angriff", 11.5)))
     T.cam(s - 0.2, Cam(40.02, 26.18, 22, 45, 30))
-    fleet0 = [(39.985, 26.120, "gb"), (39.975, 26.150, "gb"), (39.995, 26.090, "fr"), (39.965, 26.175, "fr")]
-    for i, (la, lo, code) in enumerate(fleet0):
-        T.add(Ship([(s, la - 0.02, lo - 0.03), (s + 4, la, lo)], code, t0=s, t1=T.w("erster_angriff", 11.6), size=24,
-                   fire=[(T.w("erster_angriff", 2.3), T.w("erster_angriff", 10.0))]))
+    # 3.11.1914: zwei britische Schiffe vor Seddülbahir, zwei französische vor Kumkale – alle auf offener See
+    fleet0 = [(40.040, 26.125, "gb", "seddulbahir"), (40.030, 26.135, "gb", "seddulbahir"),
+              (39.993, 26.140, "fr", "kumkale"), (39.983, 26.150, "fr", "kumkale")]
+    for i, (la, lo, code, tgt) in enumerate(fleet0):
+        T.add(Ship([(s, la, lo - 0.04), (s + 4, la, lo)], code, t0=s, t1=T.w("erster_angriff", 11.6), size=24,
+                   fire=[(T.w("erster_angriff", 2.3), T.w("erster_angriff", 10.0))], target=P[tgt]))
     T.add(Explosion(*P["seddulbahir"], T.w("erster_angriff", 8.0), 1.3))
     T.add(Battle(*P["seddulbahir"], 0.6, T.w("erster_angriff", 2.6), T.w("erster_angriff", 10.5), rate=4))
     T.add(Battle(*P["kumkale"], 0.6, T.w("erster_angriff", 3.0), T.w("erster_angriff", 10.5), rate=4, seed=3))
     T.add(DateStamp("19. Februar 1915", "Der Flottenangriff beginnt", T.w("erster_angriff", 13.6), T.w("erster_angriff", 26.0)))
-    for i in range(6):
-        la, lo, code = 39.99 + 0.006 * i, 26.10 + 0.012 * i, "gb" if i % 3 else "fr"
-        T.add(Ship([(T.w("erster_angriff", 13.0), la - 0.03, lo - 0.02), (T.w("erster_angriff", 18.0), la + 0.015, lo + 0.02)], code,
+    # 19.2.1915: drei Schiffe beschießen Seddülbahir, drei Kumkale
+    feb = [(40.045, 26.120, "gb", "seddulbahir"), (40.036, 26.130, "gb", "seddulbahir"), (40.052, 26.112, "fr", "seddulbahir"),
+           (39.996, 26.135, "gb", "kumkale"), (39.986, 26.145, "fr", "kumkale"), (40.006, 26.125, "gb", "kumkale")]
+    for i, (la, lo, code, tgt) in enumerate(feb):
+        T.add(Ship([(T.w("erster_angriff", 13.0) + i * 0.2, la - 0.004, lo - 0.045), (T.w("erster_angriff", 17.5), la, lo)], code,
                    t0=T.w("erster_angriff", 13.0), t1=T.w("erster_angriff", 21.0), size=24,
-                   fire=[(T.w("erster_angriff", 17.0), T.w("erster_angriff", 20.5))]))
+                   fire=[(T.w("erster_angriff", 17.0), T.w("erster_angriff", 20.5))], target=P[tgt]))
     T.add(Battle(*P["seddulbahir"], 0.7, T.w("erster_angriff", 17.0), T.w("erster_angriff", 21.0), rate=6, seed=5))
     T.add(Battle(*P["kumkale"], 0.7, T.w("erster_angriff", 17.3), T.w("erster_angriff", 21.0), rate=6, seed=6))
     T.cam(T.w("erster_angriff", 20.5), Cam(40.10, 26.35, 18, 48, 28))
     for i in range(5):
-        T.add(Ship([(T.w("erster_angriff", 25.5), 40.088 + i * 0.002, 26.335 + i * 0.004),
-                    (T.w("erster_angriff", 28.5), 40.100 + i * 0.002, 26.345 + i * 0.004),
-                    (T.w("erster_angriff", 31.5), 40.090 + i * 0.002, 26.338 + i * 0.004)], "gb",
+        T.add(Ship([(T.w("erster_angriff", 25.5), 40.086 + i * 0.002, 26.322 + i * 0.006),
+                    (T.w("erster_angriff", 28.5), 40.100 + i * 0.002, 26.330 + i * 0.006),
+                    (T.w("erster_angriff", 31.5), 40.090 + i * 0.002, 26.325 + i * 0.006)], "gb",
                    t0=T.w("erster_angriff", 25.5), t1=T.end("erster_angriff") + 1.0, size=14))
     T.add(Label(40.084, 26.322, "Minenräumer (Fischdampfer)", t0=T.w("erster_angriff", 25.8), t1=T.end("erster_angriff") + 1.0, size=22, align="right", dx=-12, dot=False))
     T.add(Battle(40.100, 26.345, 0.6, T.w("erster_angriff", 27.0), T.end("erster_angriff") + 1.0, rate=6, seed=8))
@@ -327,8 +533,8 @@ def build():
     T.add(DateStamp("7./8. März 1915", "Bucht von Erenköy · nachts", s, T.end("nusret")))
     T.cam(s - 0.4, Cam(40.098, 26.37, 11, 50, 200))
     T.cam(T.w("nusret", 14.0), Cam(40.085, 26.36, 9, 52, 215))
-    nus_route = [(T.w("nusret", 4.8), 40.150, 26.392), (T.w("nusret", 9.5), 40.066, 26.3445), (T.w("nusret", 17.0), 40.100, 26.357),
-                 (T.w("nusret", 22.0), 40.135, 26.390)]
+    nus_route = [(T.w("nusret", 4.8), 40.148, 26.392), (None, 40.128, 26.384), (None, 40.108, 26.360), (T.w("nusret", 9.5), 40.066, 26.3445),
+                 (T.w("nusret", 17.0), 40.100, 26.357), (None, 40.112, 26.368), (T.w("nusret", 22.0), 40.135, 26.388)]
     T.add(Ship(nus_route, "tr", t0=T.w("nusret", 4.8), t1=T.end("nusret") + 0.8, name="Nusret", size=22))
     T.add(Mines(NUSRET_MINES, T.w("nusret", 9.7), t1=FORTS_END, size=4.2, stagger=(17.0 - 9.7) / 26, highlight=True))
     T.add(Label(40.083, 26.34, "26 Minen", "parallel zum Ufer", t0=T.w("nusret", 11.0), t1=T.end("nusret"), size=26, align="right", dx=-14, dot=False))
@@ -354,11 +560,14 @@ def build():
     tin = T.w("maerz_a", 3.0)
     ships = []
     # Linie A (britisch), Linie B (französisch), Linie C (britisch, Ablösung), Flanken
-    lineA = [("Queen Elizabeth", 40.1015, 26.330), ("Agamemnon", 40.1025, 26.338), ("Lord Nelson", 40.1035, 26.346), ("Inflexible", 40.1045, 26.354)]
-    lineB = [("Suffren", 40.088, 26.335), ("Bouvet", 40.0885, 26.3445), ("Gaulois", 40.087, 26.326), ("Charlemagne", 40.0865, 26.317)]
-    lineC = [("Vengeance", 40.074, 26.310), ("Irresistible", 40.075, 26.320), ("Albion", 40.073, 26.300), ("Ocean", 40.076, 26.330),
-             ("Swiftsure", 40.072, 26.292), ("Majestic", 40.0705, 26.284)]
-    flank = [("Prince George", 40.096, 26.300), ("Triumph", 40.095, 26.360), ("Canopus", 40.060, 26.270), ("Cornwallis", 40.059, 26.282)]
+    lineA = [("Queen Elizabeth", 40.0925, 26.314), ("Agamemnon", 40.0930, 26.322), ("Lord Nelson", 40.0935, 26.330), ("Inflexible", 40.0940, 26.338)]
+    lineB = [("Suffren", 40.0825, 26.322), ("Bouvet", 40.0830, 26.331), ("Gaulois", 40.0820, 26.313), ("Charlemagne", 40.0815, 26.304)]
+    lineC = [("Vengeance", 40.0700, 26.290), ("Irresistible", 40.0705, 26.299), ("Albion", 40.0695, 26.281), ("Ocean", 40.0710, 26.308),
+             ("Swiftsure", 40.0690, 26.272), ("Majestic", 40.0685, 26.317)]
+    flank = [("Prince George", 40.0985, 26.322), ("Triumph", 40.0985, 26.336), ("Canopus", 40.0560, 26.262), ("Cornwallis", 40.0555, 26.275)]
+    # Wo die getroffenen Schiffe auf die Nusret-Minen laufen (Bucht von Erenköy)
+    hit_pos = {"Bouvet": (40.0835, 26.3485), "Inflexible": (40.0905, 26.3505), "Irresistible": (40.0885, 26.3500), "Ocean": (40.0935, 26.3525)}
+    hit_go = {"Bouvet": T.w("maerz_b", 2.0), "Inflexible": T.w("maerz_b", 13.5), "Irresistible": T.w("maerz_b", 16.0), "Ocean": T.w("maerz_b", 18.5)}
     sink = {"Bouvet": T.w("maerz_b", 6.4), "Irresistible": T.w("maerz_b", 22.6), "Ocean": T.w("maerz_b", 23.4)}
     dmg = {"Inflexible": T.w("maerz_b", 17.6), "Suffren": T.w("maerz_b", 26.8), "Gaulois": T.w("maerz_b", 27.8)}
     names_shown = {"Bouvet", "Irresistible", "Ocean", "Inflexible", "Suffren", "Gaulois", "Queen Elizabeth"}
@@ -366,18 +575,30 @@ def build():
     for i, (name, la, lo) in enumerate(lineA + lineB + lineC + flank):
         code = "fr" if (name, la, lo) in lineB else "gb"
         st = tin + i * 0.18
-        route = [(st, 40.005 + (i % 4) * 0.004, 26.195 + (i % 4) * 0.010), (st + 9.0, la, lo)]
+        # Start auf offener See vor der Einfahrt, mittig durch die Meerenge zwischen Seddülbahir und Kumkale
+        lane = (i % 4 - 1.5) * 0.0025
+        route = [(st, 40.020 + lane, 26.110), (None, 40.025 + lane, 26.198), (None, 40.040 + lane, 26.245),
+                 (None, 40.058 + lane * 0.5, 26.280), (st + 11.0, la, lo)]
+        if name in hit_pos:
+            hp = hit_pos[name]
+            route.append((hit_go[name], la, lo))
+            route.append((hit_go[name] + 3.5, hp[0], hp[1]))
         if name not in sink:
-            route.append((retreat, la, lo))
-            route.append((retreat + 7.0, 40.0 + (i % 4) * 0.004, 26.20 + (i % 4) * 0.01))
+            back_from = hit_pos.get(name, (la, lo))
+            route.append((retreat, back_from[0], back_from[1]))
+            route.append((None, 40.058 + lane * 0.5, 26.280))
+            route.append((None, 40.040 + lane, 26.245))
+            route.append((retreat + 9.0, 40.026 + lane, 26.180))
         fire = [(T.w("maerz_a", 14.6), T.w("maerz_b", 30.0))]
+        tgt = [P["rumeli_mec"], P["hamidiye"], P["kilitbahir"], P["cimenlik"]][i % 4]
         ships.append(T.add(Ship(route, code, t0=st, t1=T.end("maerz_c") + 1, sink=sink.get(name), damaged=dmg.get(name),
-                                name=None, size=25, fire=fire)))
+                                name=None, size=25, fire=fire, target=tgt)))
         if name in names_shown:
             t_lab = sink.get(name, dmg.get(name, T.w("maerz_a", 14.0))) - 2.5
             if name == "Queen Elizabeth":
                 t_lab = T.w("maerz_a", 13.0)
-            T.add(Label(la, lo, name, t0=t_lab, t1=t_lab + 6.0, size=21, dot=False, dx=0, dy=34, align="center"))
+            lp = hit_pos.get(name, (la, lo))
+            T.add(Label(lp[0], lp[1], name, t0=t_lab, t1=t_lab + 6.0, size=21, dot=False, dx=0, dy=34, align="center"))
     T.add(Token(40.071, 26.316, ["gb"], [(0, 14), (T.w("maerz_b", 23.8), 12)], label="Britische Schlachtschiffe", side=AL,
                 t0=T.w("maerz_a", 6.8), t1=T.end("maerz_c") - 1, dx=-170, dy=10))
     T.add(Token(40.074, 26.327, ["fr"], [(0, 4), (T.w("maerz_b", 9.7), 3)], label="Französische Schlachtschiffe", side=AL,
@@ -578,8 +799,8 @@ def build():
     s = T.vstart["see"]
     T.add(DateStamp("Mai 1915", "Krieg auf See", s, T.end("see")))
     T.cam(s - 0.8, Cam(40.11, 26.24, 40, 42, 30))
-    T.add(Ship([(s, 40.058, 26.225)], "gb", t0=s, t1=T.end("see"), sink=T.w("see", 9.6), name="Goliath", size=24))
-    T.add(Ship([(T.w("see", 4.8), 40.10, 26.32), (T.w("see", 8.8), 40.062, 26.232), (T.w("see", 12.0), 40.10, 26.32)], "tr",
+    T.add(Ship([(s, 40.054, 26.240)], "gb", t0=s, t1=T.end("see"), sink=T.w("see", 9.6), name="Goliath", size=24))
+    T.add(Ship([(T.w("see", 4.8), 40.10, 26.335), (None, 40.076, 26.302), (T.w("see", 8.8), 40.060, 26.246), (None, 40.076, 26.302), (T.w("see", 12.0), 40.10, 26.335)], "tr",
                t0=T.w("see", 4.6), t1=T.w("see", 13.0), name="Muavenet-i Milliye", size=18))
     T.add(Ship([(s, 40.215, 26.240)], "gb", t0=s, t1=T.end("see"), sink=T.w("see", 15.0), name="Triumph", size=24))
     T.add(Ship([(s, 40.050, 26.160)], "gb", t0=s, t1=T.end("see"), sink=T.w("see", 16.2), name="Majestic", size=24))
@@ -782,6 +1003,7 @@ def build():
         "Zahlen gerundet; die Angaben in der Literatur weichen teils deutlich voneinander ab.",
     ]))
     T.wait(24.0)
+    add_battles(T)
     T.finalize()
     return T
 

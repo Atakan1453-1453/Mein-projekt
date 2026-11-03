@@ -686,11 +686,36 @@ class Ship(Obj):
     """Kriegsschiff, fährt eine Route ab ([(t, lat, lon)]), kann sinken (sink=t) oder beschädigt werden."""
     z = 12
 
-    def __init__(self, route, code="gb", t0=0, t1=1e9, sink=None, damaged=None, name=None, size=30, fire=None):
-        self.route, self.code, self.t0, self.t1, self.sink, self.damaged, self.name, self.size = route, code, t0, t1, sink, damaged, name, size
+    def __init__(self, route, code="gb", t0=0, t1=1e9, sink=None, damaged=None, name=None, size=30, fire=None, target=None):
+        self.code, self.t0, self.t1, self.sink, self.damaged, self.name, self.size = code, t0, t1, sink, damaged, name, size
         self.fire = fire or []   # Zeitfenster [(ta, tb)] mit Mündungsfeuer
+        self.target = target     # (lat, lon) – Ziel der Geschütze (Leuchtspur + Einschläge)
+        # Route: [(t, lat, lon)]; t=None → Durchfahrtspunkt zwischen zwei Zeitpunkten (gleichmäßige Fahrt)
+        self.legs = []
+        pend = []
+        prev = None
+        for (tt, la, lo) in route:
+            if tt is None:
+                pend.append((la, lo))
+                continue
+            if prev is not None:
+                self.legs.append((prev[0], tt, [(prev[1], prev[2])] + pend + [(la, lo)]))
+            pend = []
+            prev = (tt, la, lo)
+        self.route = [(tt, la, lo) for (tt, la, lo) in route if tt is not None]
 
     def pos(self, t):
+        for (ta, tb, pts) in self.legs:
+            if ta <= t <= tb and len(pts) > 2:
+                s = ease((t - ta) / max(1e-6, tb - ta))
+                seg = [math.hypot(b[0] - a[0], (b[1] - a[1]) * 0.77) for a, b in zip(pts, pts[1:])]
+                tot = sum(seg) or 1e-9
+                d = s * tot
+                for (a, b), L in zip(zip(pts, pts[1:]), seg):
+                    if d <= L or (a, b) == (pts[-2], pts[-1]):
+                        f = d / L if L > 0 else 0
+                        return a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, (b[0] - a[0], b[1] - a[1])
+                    d -= L
         r = self.route
         if t <= r[0][0]:
             return r[0][1], r[0][2], None
@@ -748,11 +773,17 @@ class Ship(Obj):
         c.drawRect(skia.Rect.MakeXYWH(-L * 0.18, -L * 0.05, L * 0.36, L * 0.1), paint(c4(col, alpha)))
         c.restore()
         for ta, tb in self.fire:
-            if ta <= t <= tb:
-                rnd = random.Random(int(t * 7) + hash(self.name or "") % 1000)
+            if ta <= t <= tb and sinking == 0:
+                rnd = random.Random(int(t * 7) * 131 + int(self.route[0][2] * 1e4) % 977)
                 if rnd.random() < 0.45:
                     c.drawCircle(x + math.cos(ang) * L * 0.4, y + math.sin(ang) * L * 0.4, 10 + rnd.random() * 8,
                                  paint(skia.Color4f(1, 0.85, 0.5, 0.85 * alpha), blend=skia.BlendMode.kPlus, blur=6))
+                    if self.target is not None:
+                        q2 = v.proj(self.target[0] + rnd.uniform(-0.002, 0.002), self.target[1] + rnd.uniform(-0.003, 0.003))
+                        if q2 is not None:
+                            pl = paint(skia.Color4f(1, 0.9, 0.6, 0.55 * alpha), "stroke", 1.6, blend=skia.BlendMode.kPlus)
+                            c.drawLine(x, y, q2[0], q2[1], pl)
+                            c.drawCircle(q2[0], q2[1], 9 + rnd.random() * 10, paint(skia.Color4f(1, 0.6, 0.25, 0.8 * alpha), blend=skia.BlendMode.kPlus, blur=6))
         if self.damaged is not None and t >= self.damaged and sinking == 0:
             rnd = random.Random(int(t * 12))
             for k in range(3):
@@ -1342,3 +1373,363 @@ class Credits(Screen):
         for ln in self.lines:
             draw_text(c, ln, W / 2, y, font("cond_m", 23), skia.Color4f(0.75, 0.74, 0.70, a), "center", shadow=False)
             y += 36
+
+
+# ------------------------------------------------------------------ Flaggenkarte (Länder mit ihrer Flagge gefüllt)
+_FLAGIMG = {}
+
+
+def _svg_image(path, w=1600, h=1200):
+    import cairosvg
+    png = cairosvg.svg2png(url=path, output_width=w, output_height=h)
+    img = Image.open(__import__("io").BytesIO(png)).convert("RGBA")
+    return np.asarray(img).copy()
+
+
+def _stripes(colors, w=1600, h=1200, vertical=False):
+    a = np.zeros((h, w, 4), np.uint8)
+    n = len(colors)
+    for i, c in enumerate(colors):
+        c = [int(c[k:k + 2], 16) for k in (1, 3, 5)] + [255]
+        if vertical:
+            a[:, i * w // n:(i + 1) * w // n] = c
+        else:
+            a[i * h // n:(i + 1) * h // n] = c
+    return a
+
+
+def flag_texture(key):
+    """Flaggenbild (skia.Image) für die Bündniskarte 1914/15."""
+    if key in _FLAGIMG:
+        return _FLAGIMG[key]
+    F = os.path.join(ASSETS, "flags")
+    if key == "de1871":
+        a = _stripes(["#000000", "#ffffff", "#dd0000"])
+    elif key == "ah1869":
+        a = np.asarray(Image.open(os.path.join(ASSETS, "emblems", "ah_flag.png")).convert("RGBA").resize((1460, 860), Image.LANCZOS)).copy()
+    elif key == "ru1914":
+        # Nationalflagge weiß-blau-rot mit gelbem Kanton und Zarenadler (1914–1917)
+        w, h = 1800, 1200
+        a = _stripes(["#ffffff", "#0039a6", "#d52b1e"], w, h)
+        cw, ch = int(w * 0.40), int(h * 0.62)
+        a[:ch, :cw] = [255, 204, 51, 255]
+        eagle = Image.open(os.path.join(ASSETS, "emblems", "russia_eagle.png")).convert("RGBA")
+        ew = int(ch * 0.94 * eagle.size[0] / eagle.size[1])
+        eagle = eagle.resize((ew, int(ch * 0.94)), Image.LANCZOS)
+        img = Image.fromarray(a)
+        img.paste(eagle, ((cw - ew) // 2, int(ch * 0.03)), eagle)
+        a = np.asarray(img).copy()
+    else:
+        a = _svg_image(os.path.join(F, key + ".svg"))
+    img = skia.Image.fromarray(np.ascontiguousarray(a), colorType=skia.kRGBA_8888_ColorType).withDefaultMipmaps()
+    _FLAGIMG[key] = img
+    return img
+
+
+class FlagCountries(Obj):
+    """Bündniskarte im Stil einer Flaggenkarte: Länder mit ihrer Flagge gefüllt, Rand in Bündnisfarbe."""
+    z = 1
+
+    def __init__(self, entries, t0=0, t1=1e9, alpha=0.9):
+        # entries: dict(path, flag|None, rect=(lat0, lon0, lat1, lon1)|None, base=Color4f|None, side, t_on, t_off)
+        self.entries, self.t0, self.t1, self.al = entries, t0, t1, alpha
+        self.fin, self.fout = 1.0, 1.0
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0:
+            return
+        if LAND_PATH[0] is None:
+            LAND_PATH[0] = load_land()
+        c.save()
+        c.concat(v.skmatrix())
+        for e in self.entries:
+            aa = a * fade(t, e["t_on"], e.get("t_off", 1e9), 1.0, 1.0)
+            if aa <= 0:
+                continue
+            c.save()
+            c.clipPath(LAND_PATH[0], skia.ClipOp.kIntersect, True)
+            c.clipPath(e["path"], skia.ClipOp.kIntersect, True)
+            if e.get("base") is not None:
+                c.drawPath(e["path"], paint(c4(e["base"], self.al * aa)))
+            if e.get("flag"):
+                img = flag_texture(e["flag"])
+                if e.get("rect"):
+                    la0, lo0, la1, lo1 = e["rect"]
+                    x0, y0 = merc(la0, lo0)
+                    x1, y1 = merc(la1, lo1)
+                    rect = skia.Rect.MakeLTRB(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
+                else:
+                    rect = e["path"].getBounds()
+                p = skia.Paint(AntiAlias=True)
+                p.setAlphaf(self.al * aa)
+                # Mercator-y zeigt nach oben → Bild vertikal spiegeln
+                c.save()
+                c.translate(0, rect.top() + rect.bottom())
+                c.scale(1, -1)
+                c.drawImageRect(img, skia.Rect.MakeWH(img.width(), img.height()), rect, SAMPLING, p)
+                c.restore()
+            c.restore()
+            col = TR_RED if e.get("side") == "cp" else AL_BLUE if e.get("side") == "en" else skia.Color4f(0.8, 0.8, 0.8, 1)
+            c.drawPath(e["path"], paint(skia.Color4f(0, 0, 0, 0.75 * aa), "stroke", v.mpp * 3.2))
+            if e.get("side") in ("cp", "en"):
+                c.drawPath(e["path"], paint(c4(col, 0.9 * aa), "stroke", v.mpp * 1.6))
+        c.restore()
+
+
+def thrace_path():
+    """Osmanisches Ostthrakien 1913–1915 (fehlt im Grenzdatensatz): Maritza von Enez bis nördlich Edirne,
+    dann entlang der Grenze zum Schwarzen Meer; Küsten werden über die Landmaske beschnitten."""
+    pts = [(40.72, 26.03), (40.86, 26.02), (41.10, 26.32), (41.33, 26.49), (41.60, 26.58), (41.71, 26.36), (41.80, 26.44),
+           (41.88, 26.75), (41.95, 27.05), (41.98, 27.50), (42.02, 27.85), (41.99, 28.05), (41.70, 28.40), (41.30, 29.15),
+           (40.95, 29.05), (40.62, 28.10), (40.38, 27.20), (40.30, 26.80), (40.10, 26.42), (39.95, 26.14), (40.15, 25.95),
+           (40.45, 25.95), (40.72, 26.03)]
+    p = skia.Path()
+    for i, (la, lo) in enumerate(pts):
+        x, y = merc(la, lo)
+        p.moveTo(x, y) if i == 0 else p.lineTo(x, y)
+    p.close()
+    return p
+
+
+# ------------------------------------------------------------------ Gebietskontrolle (leicht eingefärbt)
+_LANDMASK = {}
+
+
+def landmask_layer():
+    """Landmaske der Halbinsel-Karte als Bild (weiß, Alpha = Land), passend zum L3-Raster."""
+    if "img" in _LANDMASK:
+        return _LANDMASK["img"], _LANDMASK["A"]
+    meta = json.load(open(os.path.join(CACHE, "sat_L3.json")))
+    dem = np.load(os.path.join(CACHE, "dem_L3.npy")).astype(np.float32)
+    k = 4
+    h, w = dem.shape[0] // k, dem.shape[1] // k
+    land = (dem[:h * k, :w * k] > 1.0).reshape(h, k, w, k).mean((1, 3))
+    from scipy import ndimage
+    land = ndimage.gaussian_filter(land, 0.8)
+    rgba = np.zeros((h, w, 4), np.uint8)
+    rgba[..., :3] = 255
+    rgba[..., 3] = np.clip(land * 255, 0, 255).astype(np.uint8)
+    img = skia.Image.fromarray(rgba, colorType=skia.kRGBA_8888_ColorType, alphaType=skia.kUnpremul_AlphaType).withDefaultMipmaps()
+    A = np.array([[meta["res"] * k, 0, meta["x0"]], [0, -meta["res"] * k, meta["y1"]], [0, 0, 1.0]])
+    _LANDMASK["img"], _LANDMASK["A"] = img, A
+    return img, A
+
+
+class ControlMap(Obj):
+    """Osmanisch gehaltenes Land ganz leicht rot, alliierte Brückenköpfe ganz leicht blau."""
+    z = 3
+
+    def __init__(self, t0, t1, areas, strength=0.20):
+        self.t0, self.t1, self.areas, self.strength = t0, t1, areas, strength   # areas: [(pts, t_on, t_off)]
+        self.fin, self.fout = 2.0, 2.0
+        self._paths = None
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0 or v.cam.width > 400:
+            return
+        img, A = landmask_layer()
+        lp = skia.Paint()
+        lp.setAlphaf(self.strength * a)
+        c.saveLayer(None, lp)
+        p = skia.Paint()
+        p.setColorFilter(skia.ColorFilters.Blend(skia.Color4f(0.93, 0.16, 0.14, 1).toColor(), skia.BlendMode.kSrcIn))
+        c.save()
+        c.concat(v.skmatrix(A))
+        c.drawImage(img, 0, 0, SAMPLING, p)
+        c.restore()
+        for pts, t_on, t_off in self.areas:
+            aa = fade(t, t_on, t_off, 1.5, 1.5)
+            if aa <= 0:
+                continue
+            sp = [v.proj(la, lo) for la, lo in pts]
+            if any(q is None for q in sp):
+                continue
+            path = path_from(catmull(sp + [sp[0]], 6))
+            path.close()
+            bp = paint(skia.Color4f(0.25, 0.55, 1.0, aa), blend=skia.BlendMode.kSrcATop)
+            c.drawPath(path, bp)
+        c.restore()
+
+
+# ------------------------------------------------------------------ Truppen als Figuren (1 Figur = 1 Soldat)
+class Unit:
+    """Ein Verband: n Figuren in Formation, bewegt sich entlang keys [(t, lat, lon)], verliert Figuren bei losses [(t, k)]."""
+
+    def __init__(self, side, n, keys, facing=0.0, area=55.0, aspect=2.5, losses=None, fire=None, nation=None, t0=None, t1=1e9, seed=0,
+                 arrive=None):
+        self.side, self.n, self.keys, self.facing = side, int(n), sorted(keys), facing
+        self.losses, self.fire, self.nation = losses or [], fire or [], nation
+        self.t0 = self.keys[0][0] if t0 is None else t0
+        self.t1 = t1
+        self.arrive = arrive          # Figuren erscheinen gestaffelt über so viele Sekunden (Nachschub/Landung)
+        rng = np.random.default_rng(seed + 17 * self.n)
+        W = math.sqrt(self.n * area * aspect)
+        D = self.n * area / W
+        u = rng.random((self.n, 2))
+        # Formation: Reihen mit leichtem Versatz und Zufall
+        self.off = np.stack([(u[:, 0] - 0.5) * W, (u[:, 1] - 0.5) * D], 1)
+        self.off += rng.normal(0, 2.0, self.off.shape)
+        self.var = rng.random(self.n)
+        self.appear = rng.random(self.n)
+        # Fallzeitpunkte: Verluste verteilen sich über 2,4 s ab dem jeweiligen Zeitpunkt
+        self.tfall = np.full(self.n, np.inf)
+        order = rng.permutation(self.n)
+        # vordere Reihen fallen zuerst
+        front = np.argsort(-self.off[:, 1] + rng.normal(0, D * 0.25, self.n))
+        idx = 0
+        for (tl, k) in sorted(self.losses):
+            k = int(min(k, self.n - idx))
+            sel = front[idx:idx + k]
+            self.tfall[sel] = tl + rng.random(k) ** 0.8 * 2.4
+            idx += k
+
+    def center(self, t):
+        ks = self.keys
+        tt = np.atleast_1d(np.asarray(t, dtype=np.float64))
+        la = np.full(tt.shape, ks[0][1])
+        lo = np.full(tt.shape, ks[0][2])
+        for (ta, a1, o1), (tb, a2, o2) in zip(ks, ks[1:]):
+            m = (tt >= ta) & (tt <= tb)
+            if m.any():
+                s = (tt[m] - ta) / max(1e-6, tb - ta)
+                s = s * s * (3 - 2 * s)
+                la[m] = a1 + (a2 - a1) * s
+                lo[m] = o1 + (o2 - o1) * s
+        last = tt > ks[-1][0]
+        la[last], lo[last] = ks[-1][1], ks[-1][2]
+        return la, lo
+
+    def merc_positions(self, lat, lon):
+        """Formation um Mittelpunkt(e) – lat/lon Skalar oder Arrays je Figur."""
+        cx = R * np.radians(lon)
+        cy = R * np.log(np.tan(np.pi / 4 + np.radians(lat) / 2))
+        k = 1.0 / np.cos(np.radians(np.mean(lat)))
+        h = math.radians(self.facing)
+        ox, oy = self.off[:, 0], self.off[:, 1]
+        # facing = Marschrichtung (0 = Nord); x quer, y nach vorn
+        ex, ey = math.cos(h), -math.sin(h)
+        fx, fy = math.sin(h), math.cos(h)
+        return cx + (ox * ex + oy * fx) * k, cy + (ox * ey + oy * fy) * k
+
+
+_TROOP_STAMPS = {
+    # (dx, dy, Helligkeitsfaktor) – kleine Soldatenfigur: Kopf + Körper
+    1: [(0, 0, 1.0), (0, -1, 1.15)],
+    2: [(0, 0, 1.0), (0, -1, 1.0), (0, -2, 1.25), (1, 0, 0.75)],
+    3: [(0, 0, 1.0), (0, -1, 1.0), (0, -2, 1.0), (0, -3, 1.3), (1, -1, 0.8), (-1, -1, 0.8), (1, 0, 0.7)],
+    4: [(0, 0, 1.0), (1, 0, 0.8), (0, -1, 1.0), (1, -1, 0.85), (0, -2, 1.0), (1, -2, 0.85), (0, -3, 1.0), (-1, -2, 0.8),
+        (2, -2, 0.8), (0, -4, 1.3), (1, -4, 1.2), (0, -5, 1.25)],
+}
+_FALLEN = [(0, 0, 1.0), (1, 0, 1.0), (2, 0, 0.9), (-1, 0, 0.9)]
+
+SIDE_RGB = {"tr": (225, 38, 36), "gb": (60, 125, 235), "fr": (120, 165, 255), "au": (60, 175, 225), "nz": (40, 150, 200)}
+
+
+class Troops(Obj):
+    """Zeichnet alle Verbände einer Szene als Figuren; Mündungsfeuer, Leuchtspuren zwischen Gegnern."""
+    z = 18
+
+    def __init__(self, units, t0, t1, enemies=None):
+        self.units, self.t0, self.t1 = units, t0, t1
+        self.enemies = enemies or []   # Paare (i, j) von Verbänden, die sich beschießen
+        self.fin, self.fout = 0.8, 1.2
+        self.buf = np.zeros((H, W, 4), np.uint8)
+
+    def _project(self, v, X, Y):
+        M = v.M
+        Xs = M[0, 0] * X + M[0, 1] * Y + M[0, 2]
+        Ys = M[1, 0] * X + M[1, 1] * Y + M[1, 2]
+        Zs = M[2, 0] * X + M[2, 1] * Y + M[2, 2]
+        ok = Zs > 1e-6
+        Zs = np.where(ok, Zs, 1.0)
+        return Xs / Zs, Ys / Zs, 1.0 / Zs, ok
+
+    def _splat(self, xs, ys, cls, rgb, alpha, stamps):
+        buf = self.buf
+        xi = np.round(xs).astype(np.int32)
+        yi = np.round(ys).astype(np.int32)
+        for (dx, dy, f) in stamps:
+            px, py = xi + dx, yi + dy
+            m = (px >= 0) & (px < W) & (py >= 0) & (py < H)
+            if not m.any():
+                continue
+            col = np.clip(np.array(rgb, np.float32) * f, 0, 255)
+            buf[py[m], px[m], 0] = col[0]
+            buf[py[m], px[m], 1] = col[1]
+            buf[py[m], px[m], 2] = col[2]
+            buf[py[m], px[m], 3] = int(255 * alpha)
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0:
+            return
+        buf = self.buf
+        buf[:] = 0
+        gm = (v.cam.width * 1000.0) / W          # Boden-Meter pro Pixel (Bildmitte)
+        flashes = []
+        stand_xy = {}
+        for ui, u in enumerate(self.units):
+            if not (u.t0 <= t <= u.t1):
+                continue
+            ua = a * fade(t, u.t0, u.t1, 0.8, 1.0)
+            vis = np.ones(u.n, bool)
+            if u.arrive:
+                vis = u.appear * u.arrive <= (t - u.t0)
+            standing = (u.tfall > t) & vis
+            fallen = (u.tfall <= t) & vis
+            lat, lon = u.center(t)
+            X, Y = u.merc_positions(lat[0], lon[0])
+            xs, ys, dz, ok = self._project(v, X, Y)
+            size = 7.5 / gm * dz
+            rgb = SIDE_RGB.get(u.nation or u.side, (200, 200, 200))
+            for cls, lo_, hi_ in ((1, 0, 2.2), (2, 2.2, 3.6), (3, 3.6, 5.5), (4, 5.5, 99)):
+                m = standing & ok & (size >= lo_) & (size < hi_)
+                if m.any():
+                    # leichtes Wippen beim Vormarsch
+                    bob = np.sin(t * 9 + u.var[m] * 20) * 0.4
+                    self._splat(xs[m], ys[m] + bob, cls, rgb, ua, _TROOP_STAMPS[cls])
+            if fallen.any():
+                lf, of = u.center(u.tfall[fallen])
+                k = 1.0 / math.cos(math.radians(float(lat[0])))
+                fx = R * np.radians(of)
+                fy = R * np.log(np.tan(np.pi / 4 + np.radians(lf) / 2))
+                h = math.radians(u.facing)
+                ox, oy = u.off[fallen, 0], u.off[fallen, 1]
+                FX = fx + (ox * math.cos(h) + oy * math.sin(h)) * k
+                FY = fy + (-ox * math.sin(h) + oy * math.cos(h)) * k
+                fxs, fys, _, fok = self._project(v, FX, FY)
+                dark = tuple(int(cc * 0.42) for cc in rgb)
+                self._splat(fxs[fok], fys[fok], 1, dark, ua * 0.95, _FALLEN)
+            if any(ta <= t <= tb for ta, tb in u.fire):
+                idx = np.nonzero(standing & ok)[0]
+                if len(idx):
+                    rnd = np.random.default_rng(int(t * 30) * 7919 + ui)
+                    nf = max(3, int(len(idx) * 0.004))
+                    pick = rnd.choice(idx, size=min(nf, len(idx)), replace=False)
+                    flashes.append((xs[pick], ys[pick] - size[pick] * 0.6, ua))
+                    stand_xy[ui] = (xs[idx], ys[idx] - size[idx] * 0.5)
+        img = skia.Image.fromarray(buf, colorType=skia.kRGBA_8888_ColorType, alphaType=skia.kUnpremul_AlphaType)
+        c.drawImage(img, 0, 0)
+        for fxs, fys, fa in flashes:
+            for x, y in zip(fxs[:60], fys[:60]):
+                c.drawCircle(float(x), float(y), 3.2, paint(skia.Color4f(1, 0.85, 0.45, 0.9 * fa), blend=skia.BlendMode.kPlus, blur=2.5))
+            for x, y in zip(fxs[60:], fys[60:]):
+                c.drawCircle(float(x), float(y), 1.6, paint(skia.Color4f(1, 0.95, 0.7, fa), blend=skia.BlendMode.kPlus))
+        # Leuchtspuren zwischen Gegnern
+        for (i, j) in self.enemies:
+            if i in stand_xy and j in stand_xy:
+                rnd = np.random.default_rng(int(t * 30) * 31 + i * 7 + j)
+                ax, ay = stand_xy[i]
+                bx, by = stand_xy[j]
+                for _ in range(18):
+                    p = rnd.integers(len(ax))
+                    q = rnd.integers(len(bx))
+                    x0, y0, x1, y1 = float(ax[p]), float(ay[p]), float(bx[q]), float(by[q])
+                    if rnd.random() < 0.5:
+                        x0, y0, x1, y1 = x1, y1, x0, y0
+                    f0 = rnd.random() * 0.6
+                    f1 = min(1.0, f0 + 0.12 + rnd.random() * 0.15)
+                    c.drawLine(x0 + (x1 - x0) * f0, y0 + (y1 - y0) * f0, x0 + (x1 - x0) * f1, y0 + (y1 - y0) * f1,
+                               paint(skia.Color4f(1, 0.9, 0.55, 0.55 * a), "stroke", 1.3, blend=skia.BlendMode.kPlus))
