@@ -1357,8 +1357,8 @@ class BilanzPanel(Screen):
 class Credits(Screen):
     z = 70
 
-    def __init__(self, t0, t1, lines):
-        self.t0, self.t1, self.lines = t0, t1, lines
+    def __init__(self, t0, t1, lines=(), roles=()):
+        self.t0, self.t1, self.lines, self.roles = t0, t1, list(lines), list(roles)
         self.fin, self.fout = 1.5, 2.0
 
     def draw(self, c, v, t):
@@ -1370,6 +1370,10 @@ class Credits(Screen):
         c.drawRect(skia.Rect.MakeXYWH(W / 2 - 220, 336, 440, 2), paint(c4(GOLD, a)))
         draw_text(c, "Im Gedenken an alle Gefallenen beider Seiten", W / 2, 392, font("cond_m", 34), skia.Color4f(0.9, 0.88, 0.82, a), "center", spacing=1.5)
         y = 500
+        for role, name in self.roles:
+            draw_text(c, role.upper(), W / 2, y, font("cond_b", 24), c4(GOLD, a), "center", spacing=5, shadow=False)
+            draw_text(c, name, W / 2, y + 64, font("cond", 58), c4(WHITE, a), "center", spacing=2.5)
+            y += 140
         for ln in self.lines:
             draw_text(c, ln, W / 2, y, font("cond_m", 23), skia.Color4f(0.75, 0.74, 0.70, a), "center", shadow=False)
             y += 36

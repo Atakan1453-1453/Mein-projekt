@@ -995,13 +995,7 @@ def build():
                  "Für uns gibt es keinen Unterschied zwischen den Johnnies", "und den Mehmets, die hier Seite an Seite liegen."],
                 "ATATÜRK ZUGESCHRIEBEN · 1934", T.w("gedenken", 12.0), T.end("gedenken") + 2.5, size=40))
     t = T.t
-    T.add(Credits(t, t + 24.0, [
-        "Sprecher: KI-Stimme (ElevenLabs v4 über Higgsfield)  ·  Musik: eigene Komposition",
-        "Satellitenbilder: enthält modifizierte Copernicus-Sentinel-2-Daten (2024)",
-        "Höhendaten: AWS Terrain Tiles (SRTM, GMTED, ETOPO1)  ·  Grenzen 1914: historical-basemaps (A. Ourednik)",
-        "Flaggen: flag-icons (MIT)  ·  Schriften: Cinzel, Barlow (SIL OFL)",
-        "Zahlen gerundet; die Angaben in der Literatur weichen teils deutlich voneinander ab.",
-    ]))
+    T.add(Credits(t, t + 24.0, roles=[("Produzent", "Atakan Zengin"), ("Kanal", "WarAZ")]))
     T.wait(24.0)
     add_battles(T)
     T.finalize()
