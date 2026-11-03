@@ -358,7 +358,7 @@ def add_battles(T):
 
     # ---------------- Suvla / Anafartalar
     k = "suvla"
-    land = [((40.290, 26.190), (40.293, 26.236), 7000), ((40.305, 26.185), (40.305, 26.226), 7000), ((40.272, 26.205), (40.275, 26.240), 6000)]
+    land = [((40.290, 26.190), (40.293, 26.254), 7000), ((40.305, 26.185), (40.311, 26.249), 7000), ((40.272, 26.205), (40.281, 26.259), 6000)]
     units = []
     for i, (src, dst, n) in enumerate(land):
         units.append(U("al", n, [(w(k, 1.8) + i * 0.3, *src), (w(k, 6.5) + i * 0.3, *dst)], facing=bearing(src, dst), area=40,
@@ -677,7 +677,7 @@ def build():
     T.add(Area([(40.0425, 26.180), (40.0420, 26.188), (40.0400, 26.192), (40.0385, 26.185), (40.0395, 26.178)], E.hexc("#b01010"),
                t0=T.w("helles", 30.3), t1=T.end("helles") + 1, alpha=0.45, outline=False, grow=2.0))
     T.add(Area([(40.0445, 26.165), (40.0560, 26.168), (40.0520, 26.190), (40.0475, 26.196), (40.0440, 26.186)], BLUE,
-               t0=T.w("helles", 33.0), t1=T.end("helles") + 1, alpha=0.30, grow=1.5))
+               t0=T.w("helles", 33.0), t1=T.end("helles") + 1, alpha=0.10, grow=1.5))
 
     # 25. April – Arıburnu
     s = T.say("anzac", pre=0.6)
@@ -703,7 +703,7 @@ def build():
                 T.w("kemal", 9.4), T.w("kemal", 19.8), size=56))
     T.add(Battle(40.245, 26.293, 0.8, T.w("kemal", 19.6), T.end("kemal") + 1, rate=8))
     T.add(Area(ANZAC_AREA, BLUE,
-               t0=T.w("kemal", 24.5), t1=T.end("kemal") + 1, alpha=0.32, grow=1.5))
+               t0=T.w("kemal", 24.5), t1=T.end("kemal") + 1, alpha=0.10, grow=1.5))
 
     # Kumkale & Bolayır
     s = T.say("kumkale", pre=0.6)
@@ -777,7 +777,7 @@ def build():
     T.add(DateStamp("19. Mai 1915", "Arıburnu", s, T.end("mai19")))
     T.cam(s - 0.8, Cam(40.240, 26.292, 6.0, 52, 85))
     T.add(Area(ANZAC_AREA, BLUE,
-               t0=s, t1=T.end("waffenruhe") + 1, alpha=0.28))
+               t0=s, t1=T.end("waffenruhe") + 1, alpha=0.08))
     T.add(Token(40.244, 26.310, ["tr"], [(0, 42000), (T.w("mai19", 20.0), 32000)], label="Osmanischer Angriff", side=TR,
                 t0=T.w("mai19", 7.0), t1=T.end("mai19") + 1, dx=70, dy=-80))
     for i, (la, lo) in enumerate([(40.233, 26.305), (40.241, 26.308), (40.249, 26.303)]):

@@ -778,7 +778,7 @@ class Ship(Obj):
                 if rnd.random() < 0.45:
                     c.drawCircle(x + math.cos(ang) * L * 0.4, y + math.sin(ang) * L * 0.4, 10 + rnd.random() * 8,
                                  paint(skia.Color4f(1, 0.85, 0.5, 0.85 * alpha), blend=skia.BlendMode.kPlus, blur=6))
-                    if self.target is not None:
+                    if self.target is not None and rnd.random() < 0.3:
                         q2 = v.proj(self.target[0] + rnd.uniform(-0.002, 0.002), self.target[1] + rnd.uniform(-0.003, 0.003))
                         if q2 is not None:
                             pl = paint(skia.Color4f(1, 0.9, 0.6, 0.55 * alpha), "stroke", 1.6, blend=skia.BlendMode.kPlus)
@@ -1520,7 +1520,7 @@ class ControlMap(Obj):
     """Osmanisch gehaltenes Land ganz leicht rot, alliierte Brückenköpfe ganz leicht blau."""
     z = 3
 
-    def __init__(self, t0, t1, areas, strength=0.20):
+    def __init__(self, t0, t1, areas, strength=0.11):
         self.t0, self.t1, self.areas, self.strength = t0, t1, areas, strength   # areas: [(pts, t_on, t_off)]
         self.fin, self.fout = 2.0, 2.0
         self._paths = None
@@ -1548,7 +1548,7 @@ class ControlMap(Obj):
                 continue
             path = path_from(catmull(sp + [sp[0]], 6))
             path.close()
-            bp = paint(skia.Color4f(0.25, 0.55, 1.0, aa), blend=skia.BlendMode.kSrcATop)
+            bp = paint(skia.Color4f(0.20, 0.55, 1.0, aa), blend=skia.BlendMode.kSrcATop)
             c.drawPath(path, bp)
         c.restore()
 
@@ -1567,10 +1567,18 @@ class Unit:
         rng = np.random.default_rng(seed + 17 * self.n)
         W = math.sqrt(self.n * area * aspect)
         D = self.n * area / W
-        u = rng.random((self.n, 2))
-        # Formation: Reihen mit leichtem Versatz und Zufall
-        self.off = np.stack([(u[:, 0] - 0.5) * W, (u[:, 1] - 0.5) * D], 1)
-        self.off += rng.normal(0, 2.0, self.off.shape)
+        # Formation: Kompanien (≈120 Mann) entlang einer leicht gewellten Front, mit Lücken und Nachzüglern
+        nc = max(1, self.n // 120)
+        cx = (np.arange(nc) + 0.5) / nc - 0.5
+        cx = cx * W + rng.normal(0, W / max(nc, 1) * 0.18, nc)
+        cy = rng.normal(0, D * 0.22, nc) + np.sin(cx / max(W, 1) * 6.0 + rng.random() * 6) * D * 0.18
+        comp = rng.integers(0, nc, self.n)
+        sx = max(4.0, W / nc * 0.42)
+        sy = max(4.0, D * 0.11)
+        cy = cy * 0.5
+        self.off = np.stack([cx[comp] + rng.normal(0, sx, self.n), cy[comp] + rng.normal(0, sy, self.n)], 1)
+        strag = rng.random(self.n) < 0.02
+        self.off[strag, 1] -= np.abs(rng.normal(0, D * 0.25, strag.sum()))
         self.var = rng.random(self.n)
         self.appear = rng.random(self.n)
         # Fallzeitpunkte: Verluste verteilen sich über 2,4 s ab dem jeweiligen Zeitpunkt
