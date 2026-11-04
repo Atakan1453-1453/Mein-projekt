@@ -1,0 +1,165 @@
+{
+ "duration": 1079.856,
+ "voice": [
+  {
+   "index": 0,
+   "key": "intro",
+   "start": 7.0
+  },
+  {
+   "index": 1,
+   "key": "europa",
+   "start": 58.031
+  },
+  {
+   "index": 2,
+   "key": "westfront",
+   "start": 91.12
+  },
+  {
+   "index": 3,
+   "key": "falkenhayn",
+   "start": 119.451
+  },
+  {
+   "index": 4,
+   "key": "festung",
+   "start": 155.877
+  },
+  {
+   "index": 5,
+   "key": "frontbogen",
+   "start": 190.408
+  },
+  {
+   "index": 6,
+   "key": "gericht",
+   "start": 219.344
+  },
+  {
+   "index": 7,
+   "key": "trommelfeuer",
+   "start": 261.982
+  },
+  {
+   "index": 8,
+   "key": "caures",
+   "start": 294.031
+  },
+  {
+   "index": 9,
+   "key": "vormarsch",
+   "start": 326.749
+  },
+  {
+   "index": 10,
+   "key": "douaumont",
+   "start": 355.483
+  },
+  {
+   "index": 11,
+   "key": "petain",
+   "start": 394.751
+  },
+  {
+   "index": 12,
+   "key": "voie_sacree",
+   "start": 421.915
+  },
+  {
+   "index": 13,
+   "key": "noria",
+   "start": 458.102
+  },
+  {
+   "index": 14,
+   "key": "linkes_ufer",
+   "start": 493.569
+  },
+  {
+   "index": 15,
+   "key": "hoelle",
+   "start": 526.238
+  },
+  {
+   "index": 16,
+   "key": "mai",
+   "start": 558.032
+  },
+  {
+   "index": 17,
+   "key": "vaux",
+   "start": 594.548
+  },
+  {
+   "index": 18,
+   "key": "raynal",
+   "start": 624.042
+  },
+  {
+   "index": 19,
+   "key": "gas",
+   "start": 657.826
+  },
+  {
+   "index": 20,
+   "key": "fleury",
+   "start": 688.263
+  },
+  {
+   "index": 21,
+   "key": "somme",
+   "start": 719.665
+  },
+  {
+   "index": 22,
+   "key": "souville",
+   "start": 750.538
+  },
+  {
+   "index": 23,
+   "key": "wende",
+   "start": 784.367
+  },
+  {
+   "index": 24,
+   "key": "vorbereitung",
+   "start": 809.598
+  },
+  {
+   "index": 25,
+   "key": "douaumont_zurueck",
+   "start": 836.874
+  },
+  {
+   "index": 26,
+   "key": "vaux_zurueck",
+   "start": 868.285
+  },
+  {
+   "index": 27,
+   "key": "dezember",
+   "start": 887.956
+  },
+  {
+   "index": 28,
+   "key": "bilanz",
+   "start": 927.875
+  },
+  {
+   "index": 29,
+   "key": "landschaft",
+   "start": 962.596
+  },
+  {
+   "index": 30,
+   "key": "erbe",
+   "start": 988.3
+  },
+  {
+   "index": 31,
+   "key": "gedenken",
+   "start": 1019.629
+  }
+ ]
+}
