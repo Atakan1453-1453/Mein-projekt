@@ -191,7 +191,7 @@ def build():
     T.cam(w("intro", 3.0), Cam(49.12, 5.38, 26, 54, 10))
     T.cam(w("intro", 8.0), Cam(49.20, 5.41, 13, 56, 18))
     # „zerrissene Landschaft“ 9.4 / „Trichter an Trichter“ 11.1 → kurz die Trichterwüste
-    T.add(CraterField([(G.ZONES["douaumont"], w("intro", 9.6), w("intro", 11.8))], w("intro", 9.6), w("intro", 17.5)))
+    T.add(CraterField([(G.ZONES["douaumont"], w("intro", 9.6), w("intro", 12.5))], w("intro", 9.6), w("intro", 17.5), strength=0.45))
     T.cam(w("intro", 12.5), Cam(49.218, 5.432, 6.5, 58, 24))
     T.add(Label(*P["douaumont"], "Fort Douaumont", t0=w("intro", 12.0), t1=w("intro", 17.0), size=24))
     T.cam(w("intro", 19.0), Cam(49.19, 5.40, 32, 50, 12))
@@ -287,6 +287,8 @@ def build():
     T.add(Caption([(None, "Fort Douaumont: das größte und stärkste Fort"), (None, "Stahlbeton, Panzertürme, auf 388 m Höhe")],
                   w("festung", 11.0), w("festung", 17.0), pos="br", width=600))
     T.cam(w("festung", 16.5), Cam(50.0, 5.0, 330, 0, 0))
+    T.add(borders_layer(w("festung", 15.5), w("festung", 27.5)))
+    T.add(Label(50.75, 4.45, "BELGIEN", t0=w("festung", 18.0), t1=w("festung", 26.0), size=24, style="sea", dot=False))
     T.add(Label(*P["liege"], "Lüttich", t0=w("festung", 21.8), t1=w("festung", 26.0), size=24))
     T.add(Label(*P["namur"], "Namur", t0=w("festung", 22.6), t1=w("festung", 26.0), size=24))
     T.add(Explosion(*P["liege"], w("festung", 22.0), 0.7))
