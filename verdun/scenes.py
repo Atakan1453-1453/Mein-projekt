@@ -404,8 +404,8 @@ def build():
         units.append(U("de", 8000, [(s, *a), (w(k, 9.0), *b)], facing=180, area=60, aspect=4.0, fire=[(s, w(k, 16.0))],
                        losses=[(w(k, 10.0), 2600)], t1=T.end(k) + 1.0, seed=40 + i))
     for i, a in enumerate([(49.270, 5.335), (49.276, 5.365), (49.276, 5.410), (49.268, 5.445), (49.256, 5.478)]):
-        b = (a[0] - 0.022, a[1])
-        units.append(U("fr", 5800, [(s, *a), (w(k, 8.0), *a), (w(k, 13.0), *b)], facing=0, area=60, aspect=4.0, fire=[(s, w(k, 13.0))],
+        b = (a[0] - 0.026, a[1])
+        units.append(U("fr", 5800, [(s, *a), (w(k, 4.0), *a), (w(k, 9.0), *b)], facing=0, area=60, aspect=4.0, fire=[(s, w(k, 13.0))],
                        losses=[(w(k, 9.6), 2700)], t1=T.end(k) + 1.0, seed=50 + i))
     troops(units, s, T.end(k) + 1.0, [(0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 10)])
     tok_de.keys.append((w(k, 10.4), 115000))
@@ -691,11 +691,11 @@ def build():
                aspect=4.0, losses=[(w(k, 14.4), 1600)], fire=[(w(k, 9.0), T.end(k))], t1=T.end(k) + 1.0, seed=122),
              U("fr", 10000, [(w(k, 5.0), 49.1940, 5.4560), (w(k, 7.0), 49.1940, 5.4560), (w(k, 18.0), 49.2120, 5.4560)], facing=10, area=40,
                aspect=4.0, losses=[(w(k, 14.8), 1400)], fire=[(w(k, 9.0), T.end(k))], t1=T.end(k) + 1.0, seed=123),
-             U("de", 5000, [(w(k, 5.0), 49.2080, 5.4120), (w(k, 16.0), 49.2080, 5.4120), (w(k, 20.0), 49.2300, 5.4150)], facing=190, area=40,
+             U("de", 5000, [(w(k, 5.0), 49.2080, 5.4120), (w(k, 10.0), 49.2080, 5.4120), (w(k, 17.0), 49.2335, 5.4150)], facing=190, area=40,
                aspect=3.5, losses=[(w(k, 12.0), 1800)], fire=[(w(k, 9.0), w(k, 19.0))], t1=T.end(k) + 1.0, seed=124),
-             U("de", 5000, [(w(k, 5.0), 49.2050, 5.4380), (w(k, 16.4), 49.2050, 5.4380), (w(k, 20.4), 49.2290, 5.4420)], facing=190, area=40,
+             U("de", 5000, [(w(k, 5.0), 49.2050, 5.4380), (w(k, 10.0), 49.2050, 5.4380), (w(k, 17.0), 49.2310, 5.4420)], facing=190, area=40,
                aspect=3.5, losses=[(w(k, 12.4), 2000)], fire=[(w(k, 9.0), w(k, 19.0))], t1=T.end(k) + 1.0, seed=125),
-             U("de", 5000, [(w(k, 5.0), 49.2040, 5.4580), (w(k, 16.8), 49.2040, 5.4580), (w(k, 20.6), 49.2200, 5.4620)], facing=190, area=40,
+             U("de", 5000, [(w(k, 5.0), 49.2040, 5.4580), (w(k, 10.0), 49.2040, 5.4580), (w(k, 17.0), 49.2230, 5.4620)], facing=190, area=40,
                aspect=3.5, losses=[(w(k, 12.8), 1600)], fire=[(w(k, 9.0), w(k, 19.0))], t1=T.end(k) + 1.0, seed=126)]
     troops(units, w(k, 5.0), T.end(k) + 1.0, [(0, 3), (1, 4), (2, 5)])
     T.add(Caption([([FR], "Kolonialregiment aus Marokko (RICM)"), (None, "mit Bataillonen aus Somalia und dem Senegal")], w(k, 13.0), w(k, 19.5),
@@ -725,7 +725,7 @@ def build():
     units = [U("fr", 8000, [(w(k, 2.0), la - 0.004, lo), (w(k, 3.0), la - 0.004, lo), (w(k, 10.0), la2 - 0.004, lo2)], facing=10, area=45,
                aspect=4.0, losses=[(w(k, 8.0), 900)], fire=[(w(k, 4.0), w(k, 12.0))], t1=w(k, 19.0), seed=131 + i)
              for i, ((la, lo), (la2, lo2)) in enumerate(zip(G.FRONTS["nov02"][8:16:2], G.FRONTS["dec18"][8:16:2]))]
-    units += [U("de", 6000, [(w(k, 2.0), la + 0.006, lo), (w(k, 7.0), la + 0.006, lo), (w(k, 11.0), la2 + 0.010, lo2)], facing=190, area=45,
+    units += [U("de", 6000, [(w(k, 2.0), la + 0.006, lo), (w(k, 4.0), la + 0.006, lo), (w(k, 9.0), la2 + 0.010, lo2)], facing=190, area=45,
                 aspect=4.0, losses=[(w(k, 8.6), 2200)], fire=[(w(k, 4.0), w(k, 11.0))], t1=w(k, 19.0), seed=141 + i)
               for i, ((la, lo), (la2, lo2)) in enumerate(zip(G.FRONTS["nov02"][9:16:2], G.FRONTS["dec18"][9:16:2]))]
     nf = 4
