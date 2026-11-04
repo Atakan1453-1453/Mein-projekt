@@ -42,21 +42,24 @@ DMINOR = [62, 64, 65, 67, 69, 70, 72, 74]
 
 MOODS = {
     #            bpm  progression                                 intensity  melody
-    "intro":    (60, ["Dm", "Bb", "Gm", "A", "Dm", "Eb", "Dm", "A"], 0.35, "ney"),
+    "intro":    (60, ["Dm", "Bb", "Gm", "A", "Dm", "Eb", "Dm", "A"], 0.35, "cello"),
     "world":    (76, ["Dm", "C", "Bb", "A"], 0.55, "horn"),
-    "fortress": (66, ["Dm", "Eb", "Dm", "C", "Bb", "Eb", "A", "A"], 0.45, "ney"),
+    "fortress": (66, ["Dm", "Eb", "Dm", "C", "Bb", "Eb", "A", "A"], 0.45, "horn"),
+    "barrage":  (92, ["Dm", "Bb", "C", "A", "Dm", "Eb", "Gm", "A"], 1.0, "brass"),
+    "forts":    (88, ["Dm", "Bb", "Gm", "A", "Dm", "Eb", "Bb", "A"], 0.9, "brass"),
+    "counter":  (96, ["Dm", "F", "C", "Bb", "Gm", "Bb", "C", "A"], 0.95, "horn"),
     "naval":    (96, ["Dm", "Bb", "C", "A", "Dm", "Bb", "Gm", "A"], 0.95, "brass"),
     "prepare":  (80, ["Gm", "Dm", "Eb", "A"], 0.55, "horn"),
     "landing":  (100, ["Dm", "Bb", "C", "A", "Gm", "Bb", "Eb", "A"], 1.0, "brass"),
     "trench":   (64, ["Dm", "Gm", "Bb", "A", "Dm", "F", "Gm", "A"], 0.5, "cello"),
     "august":   (96, ["Dm", "C", "Bb", "A", "Gm", "Eb", "Bb", "A"], 0.95, "brass"),
     "winter":   (58, ["Dm", "Bb", "F", "A", "Dm", "Gm", "Eb", "A"], 0.3, "strings"),
-    "legacy":   (64, ["Dm", "Bb", "F", "C", "Gm", "Bb", "Eb", "A"], 0.55, "ney"),
+    "legacy":   (64, ["Dm", "Bb", "F", "C", "Gm", "Bb", "Eb", "A"], 0.55, "strings"),
     "legacy2":  (62, ["Bb", "F", "Gm", "Eb", "Bb", "F", "C", "D"], 0.6, "hymn"),
 }
 
 # GM-Programme
-P_STR, P_BASS, P_CELLO, P_TIMP, P_HORN, P_TBN, P_CHOIR, P_HARP, P_NEY, P_TAIKO, P_STRTREM = 48, 43, 42, 47, 60, 57, 52, 46, 77, 116, 44
+P_STR, P_BASS, P_CELLO, P_TIMP, P_HORN, P_TBN, P_CHOIR, P_HARP, P_NEY, P_TAIKO, P_STRTREM = 48, 43, 42, 47, 60, 57, 52, 46, 68, 116, 44
 
 
 class Song:
@@ -170,7 +173,7 @@ def compose(mood, seconds, seed):
             for k in range(8):
                 s.note(6, beat0 + k * 0.5, 0.6, arp[k % 4] + (12 if k >= 4 else 0), v * 0.45)
         # Streichertremolo bei Spannung
-        if mood in ("fortress", "prepare", "naval", "landing", "august") and b % 2 == 1:
+        if mood in ("fortress", "prepare", "naval", "landing", "august", "barrage", "forts", "counter") and b % 2 == 1:
             s.note(11, beat0, 4, ch3[2] + 24, v * 0.55)
         # Melodie: Ney / Horn / Blech / Cello
         if b % 2 == 0 and b >= 2:
@@ -284,6 +287,26 @@ def build_sfx(tl, n):
             for k in range(ns):
                 tt = o.t0 + rnd.random() * dur
                 place(sfx, shots[k % len(shots)], tt, 0.05 + 0.05 * rnd.random(), rnd.uniform(-0.8, 0.8))
+        elif name == "Barrage":
+            dur = max(0.0, min(o.t1, tl.duration) - o.t0)
+            nb = int(dur * min(7.0, o.rate * 0.14))
+            for k in range(nb):
+                place(sfx, booms[k % len(booms)], o.t0 + rnd.random() * dur, 0.06 + 0.07 * rnd.random(), rnd.uniform(-0.8, 0.8))
+        elif name == "Troops":
+            for u in o.units:
+                for ta, tb in u.fire:
+                    ta, tb = max(ta, o.t0), min(tb, o.t1, tl.duration)
+                    for k in range(int(max(0.0, tb - ta) * 7)):
+                        place(sfx, shots[k % len(shots)], ta + rnd.random() * (tb - ta), 0.035 + 0.04 * rnd.random(), rnd.uniform(-0.9, 0.9))
+        elif name == "Guns" and o.fire:
+            for ta, tb in o.fire:
+                ta, tb = max(ta, o.t0), min(tb, o.t1, tl.duration)
+                for k in range(int(max(0.0, tb - ta) * 1.6)):
+                    place(sfx, booms[(k + 3) % len(booms)] * 0.7, ta + rnd.random() * (tb - ta), 0.05, rnd.uniform(-0.8, 0.8))
+        elif name == "ShellArcs":
+            n = int((o.t1 - o.t0) / o.every) + 1
+            for k in range(n):
+                place(sfx, booms[2], o.t0 + k * o.every + o.flight, 0.30, 0.1)
         elif name == "Ship" and o.sink is not None:
             place(sfx, booms[2], o.sink, 0.45, 0.0)
             place(sfx, booms[4] * 0.6, o.sink + 0.7, 0.3, 0.2)
