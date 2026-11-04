@@ -4,8 +4,11 @@ Animierte Karten-Dokumentation auf Deutsch über die Schlacht um Verdun (21. Feb
 im gleichen Stil und Ablauf wie das Çanakkale-Video in `../canakkale`. Das Video beginnt mit einer Luftaufnahme
 über Verdun und fliegt zu jedem Ereignis. Truppen erscheinen als Flaggen-Marker mit Zahlen (Deutsches Kaiserreich
 Schwarz-Weiß-Rot, Frankreich Trikolore) und als Figuren (1 Figur = 1 Soldat: deutsch rot, französisch blau), die im
-Gefecht fallen. Der Frontverlauf wird über das ganze Jahr animiert, deutsch gehaltenes Gebiet ist ganz leicht rot,
-französisches ganz leicht blau eingefärbt. Die Wälder verwandeln sich nach und nach in eine Trichterwüste.
+Gefecht fallen. Der Frontverlauf wird über das ganze Jahr animiert. Hinter der Linie liegt auf jeder Seite hauchdünn die
+Flagge des Landes (deutsch gehaltenes Gebiet Schwarz-Weiß-Rot, französisches Trikolore), in der Übersichtskarte kräftig.
+Alle Verbände bleiben an der Front stehen und rücken mit ihr mit; Gefallene verblassen nach einigen Sekunden.
+Wo die Granaten einschlagen, brennen die Wälder. Die Wälder verwandeln sich nach und nach in eine Trichterwüste.
+Die Kamera zoomt nahtlos von der Nahansicht bis zur Europakarte (Satellit → ESA WorldCover in Naturfarben).
 
 1920×1080, 30 fps, 18:00 min, deutscher KI-Sprecher („Alistair“), eigene Orchestermusik und Gefechtsgeräusche.
 Abspann: Produzent Atakan Zengin · Kanal WarAZ.
@@ -32,14 +35,14 @@ Abspann: Produzent Atakan Zengin · Kanal WarAZ.
 | `narration.py` | Sprechertext (32 Abschnitte) |
 | `vgeo.py` | Orte, Forts, Maas, Frontverläufe 1916, Trichterzonen, Voie Sacrée, Westfront |
 | `scenes.py` | Drehbuch als Zeitleiste: Kamerafahrten, Frontanimation, Flaggen-Zähler, Figuren, Einblendungen |
-| `engine.py` | Render-Engine (aus `../canakkale`), erweitert um FrontMap, CraterField, Barrage/Feuerwalze, GasCloud, Convoy, Bird, VFort, Guns, ShellArcs |
-| `prep_data.py` | Satellit (Sentinel-2, 11.8.2025), Höhendaten, Trichtertextur |
+| `engine.py` | Render-Engine (aus `../canakkale`), erweitert um FrontMap, CraterField, Barrage/Feuerwalze, GasCloud, Convoy, Bird, VFort, Guns, ShellArcs, TerritoryFlags, Burning, Rain, BigWord, FrontPulse |
+| `prep_data.py` | Satellit (Sentinel-2, 11.8.2025), Höhendaten, Trichtertextur, Europa/Übergangskarte aus ESA WorldCover |
 | `render.py`, `render_chunks.py` | Einzelbilder / Video in Stücken rendern |
 | `music.py`, `mix_final.py` | Musik (MIDI → FluidSynth) und Geräusche, Endmischung mit Sprecher |
 | `voice_durations.json`, `voice_jobs.json` | Längen und Higgsfield-Dateinamen der Sprachaufnahmen |
 
-Neu rendern wie in `../canakkale/README.md` beschrieben (`prep_data.py L2 L3 craters`, dann `render_chunks.py`,
-`music.py`, `mix_final.py`). Die Bündniskarte nutzt `europe.jpg` aus dem Çanakkale-Cache.
+Neu rendern wie in `../canakkale/README.md` beschrieben (`prep_data.py L2 L3 craters worldcover`, dann `render_chunks.py`,
+`music.py`, `mix_final.py`).
 
 ## Zahlen und Quellen
 
@@ -70,6 +73,8 @@ in einzelnen Gefechten (Figuren) sind Größenordnungen, keine exakten Zahlen. D
 ## Lizenzen und Daten
 
 * Satellitenbilder: enthält modifizierte Copernicus-Sentinel-2-Daten (2025), über AWS Open Data (`sentinel-cogs`)
+* Übersichtskarten: © ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by
+  ESA WorldCover consortium (CC BY 4.0), eingefärbt passend zum Satellitenbild (`prep_data.py worldcover`)
 * Höhendaten: AWS Terrain Tiles (Mapzen; SRTM, GMTED, ETOPO1)
 * Grenzen 1914: [historical-basemaps](https://github.com/aourednik/historical-basemaps) (A. Ourednik), Landflächen: Natural Earth
 * Flaggen: [flag-icons](https://github.com/lipis/flag-icons) (MIT); Österreich-Ungarn 1869: OpenFront (CC BY-SA 4.0);

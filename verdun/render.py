@@ -26,8 +26,9 @@ class Renderer:
     def __init__(self, timeline):
         self.tl = timeline
         self.europe = E.MapLayer("europe")
-        self.L2 = E.MapLayer("sat_L2", feather=40)
-        self.L3 = E.MapLayer("sat_L3", feather=160)
+        self.L1 = E.MapLayer("sat_L1", feather=160)
+        self.L2 = E.MapLayer("sat_L2", feather=260)
+        self.L3 = E.MapLayer("sat_L3", feather=420)
         self.vignette = E.Vignette()
         self.surface = skia.Surface(E.W, E.H)
         self.buf = np.zeros((E.H, E.W, 4), np.uint8)
@@ -59,13 +60,21 @@ class Renderer:
         cam = v.cam
         c.clear(skia.Color4f(0.04, 0.07, 0.095, 1))
         samp = E.SAMPLING
-        # Verdun: Satellitenbild nur in der Nähe (L2 deckt nur ~150 km ab), sonst Reliefkarte
-        sat = E.clamp((260 - cam.width) / 110)
-        l3 = sat * E.clamp((80 - cam.width) / 22) if cam.width < 80 else 0.0
-        need_l2 = not (l3 >= 1 and v.covered_by(self.L3.bounds, 200))
-        need_eu = not (sat >= 1 and v.covered_by(self.L2.bounds, 60))
-        if need_eu and need_l2:
+        # Ebenen: Europa (Landbedeckung) → Westeuropa (Landbedeckung, 320 m) → Satellit 60 m → Satellit 14 m,
+        # jeweils weich überblendet; Farben der Landbedeckung sind auf das Satellitenbild abgestimmt.
+        w = cam.width
+        a1 = E.clamp((2300 - w) / 900)
+        sat = E.clamp((330 - w) / 130)
+        l3 = sat * E.clamp((80 - w) / 22) if w < 80 else 0.0
+        need_l2 = not (l3 >= 1 and v.covered_by(self.L3.bounds, 420))
+        need_l1 = not (sat >= 1 and v.covered_by(self.L2.bounds, 260))
+        need_eu = not (a1 >= 1 and v.covered_by(self.L1.bounds, 160))
+        if need_eu and need_l1 and need_l2:
             self.draw_layer(c, v, self.europe)
+        if a1 > 0 and need_l1 and need_l2:
+            p1 = skia.Paint()
+            p1.setAlphaf(a1)
+            self.draw_layer(c, v, self.L1, p1)
         if sat > 0:
             p = skia.Paint()
             p.setAlphaf(sat)

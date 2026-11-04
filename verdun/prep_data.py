@@ -68,7 +68,12 @@ def fetch_tile(z, x, y):
     path = os.path.join(DATA, "dem", str(z), str(x), f"{y}.png")
     if not os.path.exists(path) or os.path.getsize(path) == 0:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        subprocess.run(["curl", "-s", "--retry", "3", "-o", path, f"{TERRARIUM}/{z}/{x}/{y}.png"], check=True)
+        for attempt in range(6):
+            r = subprocess.run(["curl", "-s", "--retry", "3", "--retry-all-errors", "-o", path, f"{TERRARIUM}/{z}/{x}/{y}.png"])
+            if r.returncode == 0 and os.path.getsize(path) > 0:
+                break
+            import time
+            time.sleep(2 + attempt * 2)
     return path
 
 
@@ -86,7 +91,11 @@ def dem_for_grid(g, z):
     nx, ny = tx1 - tx0 + 1, ty1 - ty0 + 1
     mosaic = np.zeros((ny * 256, nx * 256), np.float32)
     for (zz, x, y) in jobs:
-        a = np.asarray(Image.open(os.path.join(DATA, "dem", str(z), str(x), f"{y}.png")).convert("RGB")).astype(np.float32)
+        try:
+            a = np.asarray(Image.open(os.path.join(DATA, "dem", str(z), str(x), f"{y}.png")).convert("RGB")).astype(np.float32)
+        except Exception:
+            print("  Höhenkachel fehlt:", z, x, y, flush=True)
+            continue
         e = a[..., 0] * 256 + a[..., 1] + a[..., 2] / 256 - 32768
         mosaic[(y - ty0) * 256:(y - ty0 + 1) * 256, (x - tx0) * 256:(x - tx0 + 1) * 256] = e
     world = 2 * math.pi * R
@@ -296,6 +305,120 @@ def build_craters():
     print("gespeichert craters", out.shape, flush=True)
 
 
+# ---------------------------------------------------------------- Landbedeckung (ESA WorldCover) für Übersichtskarten
+WC = "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_{ns}{lat:02d}{ew}{lon:03d}_Map.tif"
+WC_CLASSES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
+
+
+def wc_for_grid(g, lon0, lon1, lat0, lat1, level):
+    """WorldCover-Klassen (uint8) auf das Mercator-Raster g bringen; fehlende Kacheln (Meer) = 0."""
+    out = np.zeros((g["h"], g["w"]), np.uint8)
+    tiles = [(la, lo) for la in range(int(math.floor(lat0 / 3) * 3), int(math.ceil(lat1 / 3) * 3), 3)
+             for lo in range(int(math.floor(lon0 / 3) * 3), int(math.ceil(lon1 / 3) * 3), 3)]
+
+    def one(tile):
+        la, lo = tile
+        url = WC.format(ns="N" if la >= 0 else "S", lat=abs(la), ew="E" if lo >= 0 else "W", lon=abs(lo))
+        try:
+            with rasterio.open("/vsicurl/" + url, overview_level=level) as src:
+                return tile, src.read(1), src.transform, src.crs
+        except Exception:
+            return tile, None, None, None
+    with ThreadPoolExecutor(16) as ex:
+        res = list(ex.map(one, tiles))
+    n_ok = 0
+    for tile, data, tr, crs in res:
+        if data is None:
+            continue
+        n_ok += 1
+        tmp = np.zeros_like(out)
+        reproject(data, tmp, src_transform=tr, src_crs=crs, src_nodata=0, dst_transform=g["transform"], dst_crs="EPSG:3857",
+                  dst_nodata=0, resampling=Resampling.mode)
+        m = (out == 0) & (tmp != 0)
+        out[m] = tmp[m]
+    print("  WorldCover-Kacheln", n_ok, "von", len(tiles), flush=True)
+    return out
+
+
+def wc_palette():
+    """Mittlere Farbe des (gradierten) Satellitenbilds je Landbedeckungsklasse – damit Übersichtskarte und Satellit zusammenpassen."""
+    meta = json.load(open(os.path.join(CACHE, "sat_L2.json")))
+    g = dict(x0=meta["x0"], y1=meta["y1"], res=meta["res"], w=meta["w"], h=meta["h"],
+             transform=from_origin(meta["x0"], meta["y1"], meta["res"], meta["res"]))
+    cls = wc_for_grid(g, 4.45, 6.45, 48.55, 49.62, 3)
+    sat = np.asarray(Image.open(os.path.join(CACHE, "sat_L2.jpg")).convert("RGB")).astype(np.float32) / 255
+    pal = {}
+    for c in WC_CLASSES:
+        m = cls == c
+        if m.sum() > 200:
+            pal[c] = sat[m].mean(0)
+    # Felder: helle (abgeerntete) und grüne Anteile getrennt, für ein Flickenmuster
+    m = cls == 40
+    crop = sat[m]
+    lum = crop @ np.array([0.299, 0.587, 0.114], np.float32)
+    green = (crop[:, 1] > crop[:, 0] * 1.02)
+    pal["crop_gold"] = crop[~green & (lum > np.median(lum))].mean(0)
+    pal["crop_green"] = crop[green].mean(0) if green.sum() > 100 else pal[40]
+    fallback = {20: pal.get(30, pal[10]), 60: np.array([0.55, 0.52, 0.47], np.float32), 70: np.array([0.9, 0.92, 0.95], np.float32),
+                80: WATER_DEEP, 90: pal.get(30, pal[10]), 95: pal[10], 100: pal.get(30, pal[10])}
+    for c, v in fallback.items():
+        pal.setdefault(c, v)
+    print("  Palette:", {k: np.round(v, 2).tolist() for k, v in pal.items()}, flush=True)
+    return pal
+
+
+def colorize_wc(cls, dem, res_ground, pal, seed, hs_strength=0.6, zf=1.6, patch_px=1.0):
+    h, w = cls.shape
+    rng = np.random.default_rng(seed)
+    rgb = np.zeros((h, w, 3), np.float32)
+    for c in WC_CLASSES:
+        m = cls == c
+        if m.any():
+            rgb[m] = pal[c]
+    # Feldflicken: gold/grün gemischt
+    m = cls == 40
+    if m.any():
+        noise = rng.random((h, w)).astype(np.float32)
+        if patch_px > 1:
+            noise = ndimage.gaussian_filter(noise, patch_px * 0.5)
+            noise = (noise - noise.mean()) / (noise.std() + 1e-6) * 0.29 + 0.5
+        f = np.clip((noise - 0.35) * 3.0, 0, 1)[..., None]
+        mix = pal["crop_green"] * (1 - f) + pal["crop_gold"] * f
+        rgb[m] = mix[m]
+    land_dem = dem > 0.5
+    nodata = cls == 0
+    sea = nodata & ~land_dem
+    rel = relief_style(dem, res_ground)            # Ersatz, wo keine Klasse vorliegt (außerhalb der Kacheln)
+    rgb[nodata & land_dem] = rel[nodata & land_dem]
+    hs = hillshade(dem, res_ground, zf=zf)
+    shade = 1.0 + hs_strength * (hs - 0.62) * 1.6
+    tex = 1 + ndimage.gaussian_filter(rng.standard_normal((h, w)).astype(np.float32), 1.2)[..., None] * 0.05
+    rgb = rgb * shade[..., None] * tex
+    water = sea | (cls == 80)
+    wm = ndimage.gaussian_filter(water.astype(np.float32), 0.7)[..., None]
+    dist = ndimage.distance_transform_edt(water) * res_ground
+    shallow = np.exp(-dist / 6000.0)[..., None]
+    wcol = WATER_DEEP * (1 - shallow) + WATER_SHALLOW * shallow
+    rgb = rgb * (1 - wm) + wcol * wm
+    return (np.clip(rgb, 0, 1) * 255 + 0.5).astype(np.uint8)
+
+
+def build_L1_europe():
+    pal = wc_palette()
+    # Westeuropa, ~320 m/px
+    g = grid(-2.0, 14.0, 44.0, 54.0, 320.0)
+    print("L1", g["w"], g["h"], flush=True)
+    dem = dem_for_grid(g, 9)
+    cls = wc_for_grid(g, -2.0, 14.0, 44.0, 54.0, 4)
+    save("sat_L1", colorize_wc(cls, dem, g["res"] * math.cos(math.radians(49)), pal, 1, hs_strength=0.75, zf=2.0), g)
+    # Europa, 2,4 km/px
+    g = grid(-16.0, 58.0, 22.0, 67.0, 2400.0)
+    print("Europa", g["w"], g["h"], flush=True)
+    dem = np.load(os.path.join(CACHE, "dem_europe.npy")).astype(np.float32)
+    cls = wc_for_grid(g, -16.0, 58.0, 22.0, 67.0, 5)
+    save("europe", colorize_wc(cls, dem, g["res"] * 0.7, pal, 2, hs_strength=0.8, zf=2.5), g)
+
+
 if __name__ == "__main__":
     which = sys.argv[1:] or ["europe", "L2", "L3", "craters"]
     if "europe" in which:
@@ -306,3 +429,5 @@ if __name__ == "__main__":
         build_L3()
     if "craters" in which:
         build_craters()
+    if "worldcover" in which:
+        build_L1_europe()

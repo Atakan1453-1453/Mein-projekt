@@ -1418,6 +1418,17 @@ def flag_texture(key):
         a = _stripes(["#000000", "#ffffff", "#dd0000"])
     elif key == "ah1869":
         a = np.asarray(Image.open(os.path.join(ASSETS, "emblems", "ah_flag.png")).convert("RGBA").resize((1460, 860), Image.LANCZOS)).copy()
+    elif key == "it1861":
+        w, h = 1500, 1000
+        a = _stripes(["#009246", "#ffffff", "#ce2b37"], w, h, vertical=True)
+        cx, cy, sw, sh = w // 2, h // 2, 190, 240
+        yy, xx = np.mgrid[0:h, 0:w]
+        shield = (np.abs(xx - cx) <= sw / 2) & (yy >= cy - sh / 2) & (yy <= cy + sh / 2 - np.clip((np.abs(xx - cx) - sw * 0.1), 0, None) * 0.9)
+        border = shield & ~((np.abs(xx - cx) <= sw / 2 - 16) & (yy >= cy - sh / 2 + 16) & (yy <= cy + sh / 2 - 16 - np.clip((np.abs(xx - cx) - sw * 0.1), 0, None) * 0.9))
+        a[shield] = [206, 43, 55, 255]
+        cross = shield & ~border & ((np.abs(xx - cx) <= 22) | (np.abs(yy - (cy - 10)) <= 22))
+        a[cross] = [255, 255, 255, 255]
+        a[border] = [0, 82, 165, 255]
     elif key == "ru1914":
         # Nationalflagge weiß-blau-rot mit gelbem Kanton und Zarenadler (1914–1917)
         w, h = 1800, 1200
@@ -1678,10 +1689,13 @@ class Troops(Obj):
             buf[py[m], px[m], 0] = col[0]
             buf[py[m], px[m], 1] = col[1]
             buf[py[m], px[m], 2] = col[2]
-            buf[py[m], px[m], 3] = int(255 * alpha)
+            if np.ndim(alpha):
+                buf[py[m], px[m], 3] = np.clip(255 * alpha[m], 0, 255).astype(np.uint8)
+            else:
+                buf[py[m], px[m], 3] = int(255 * alpha)
 
     def draw(self, c, v, t):
-        a = self.alpha(t)
+        a = self.alpha(t) * clamp((130 - v.cam.width) / 40)
         if a <= 0:
             return
         buf = self.buf
@@ -1697,7 +1711,8 @@ class Troops(Obj):
             if u.arrive:
                 vis = u.appear * u.arrive <= (t - u.t0)
             standing = (u.tfall > t) & vis
-            fallen = (u.tfall <= t) & vis
+            # Gefallene bleiben eine Weile liegen und verblassen dann (sonst bleiben ganze Blöcke stehen)
+            fallen = (u.tfall <= t) & (u.tfall > t - 26.0) & vis
             lat, lon = u.center(t)
             X, Y = u.merc_positions(lat[0], lon[0])
             xs, ys, dz, ok = self._project(v, X, Y)
@@ -1720,7 +1735,9 @@ class Troops(Obj):
                 FY = fy + (-ox * math.sin(h) + oy * math.cos(h)) * k
                 fxs, fys, _, fok = self._project(v, FX, FY)
                 dark = tuple(int(cc * 0.42) for cc in rgb)
-                self._splat(fxs[fok], fys[fok], 1, dark, ua * 0.95, _FALLEN)
+                age = t - u.tfall[fallen]
+                fa_ = ua * 0.95 * (1.0 - np.clip((age - 14.0) / 11.0, 0.0, 1.0))
+                self._splat(fxs[fok], fys[fok], 1, dark, fa_[fok], _FALLEN)
             if any(ta <= t <= tb for ta, tb in u.fire):
                 idx = np.nonzero(standing & ok)[0]
                 if len(idx):
@@ -1882,17 +1899,19 @@ class FrontMap(Obj):
         if a <= 0 or v.cam.width > 420:
             return
         full, key = self.line_at(t)
-        if self._cache[0] != key:
-            self._cache = (key, self._raster(full))
-        p = skia.Paint()
-        p.setAlphaf(self.strength * a)
-        draw_merc_image(c, v, self._cache[1], self.A, p)
+        if self.strength > 0:
+            if self._cache[0] != key:
+                self._cache = (key, self._raster(full))
+            p = skia.Paint()
+            p.setAlphaf(self.strength * a)
+            draw_merc_image(c, v, self._cache[1], self.A, p)
         if self.line:
             for run in screen_runs(v, full):
                 path = path_from(catmull(run, 3))
-                c.drawPath(path, paint(skia.Color4f(0, 0, 0, 0.55 * a), "stroke", 6.5))
-                c.drawPath(path, paint(skia.Color4f(0.92, 0.18, 0.16, 0.95 * a), "stroke", 3.6))
-                c.drawPath(path, paint(skia.Color4f(1, 0.93, 0.85, 0.9 * a), "stroke", 1.3))
+                c.drawPath(path, paint(skia.Color4f(0, 0, 0, 0.6 * a), "stroke", 9.0))
+                c.drawPath(path, paint(skia.Color4f(1.0, 0.86, 0.35, 0.35 * a), "stroke", 12.0, blur=4))
+                c.drawPath(path, paint(skia.Color4f(0.95, 0.20, 0.16, a), "stroke", 4.8))
+                c.drawPath(path, paint(skia.Color4f(1, 0.96, 0.88, a), "stroke", 1.8))
 
 
 _CRATERS = {}
@@ -2297,3 +2316,338 @@ class Pulse(Obj):
             c.drawCircle(x, y, self.r * (0.4 + 1.6 * ph), paint(c4(self.color, 0.9 * (1 - ph) * a), "stroke", 3.0))
         c.drawCircle(x, y, 7, paint(c4(self.color, a)))
         c.drawCircle(x, y, 7, paint(skia.Color4f(1, 1, 1, a), "stroke", 2))
+
+
+
+# ================================================================== Flaggen-Gebiete (alle Maßstäbe)
+def merc_poly_path(pts):
+    p = skia.Path()
+    for i, (la, lo) in enumerate(pts):
+        x, y = merc(float(la), float(lo))
+        p.moveTo(x, y) if i == 0 else p.lineTo(x, y)
+    p.close()
+    return p
+
+
+_LANDCLIP = {}
+
+
+def safe_op(a, b, op, fallback=None):
+    """Pfad-Verknüpfung, die bei Geometriefehlern nicht abbricht."""
+    try:
+        r = skia.Op(a, b, op)
+        if r is not None:
+            return r
+    except Exception:
+        pass
+    try:
+        aa, bb = skia.Path(a), skia.Path(b)
+        aa.setFillType(skia.PathFillType.kWinding)
+        bb.setFillType(skia.PathFillType.kWinding)
+        r = skia.Op(skia.AsWinding(aa) or aa, skia.AsWinding(bb) or bb, op)
+        if r is not None:
+            return r
+    except Exception:
+        pass
+    return a if fallback is None else fallback
+
+
+_LAND_POLYS = []
+
+
+def land_polys():
+    """Landflächen (Natural Earth) als einzelne Pfade mit Begrenzungsrechteck."""
+    if not _LAND_POLYS:
+        data = json.load(open(os.path.join(os.environ.get("CNK_DATA", os.path.join(HERE, "data")), "geo", "ne_50m_land.geojson")))
+        for f in data["features"]:
+            geom = f["geometry"]
+            polys = geom["coordinates"] if geom["type"] == "MultiPolygon" else [geom["coordinates"]]
+            for poly in polys:
+                p = skia.Path()
+                for ring in poly:
+                    for i, (lon, lat) in enumerate(ring):
+                        x, y = merc(max(-85, min(85, lat)), lon)
+                        p.moveTo(x, y) if i == 0 else p.lineTo(x, y)
+                    p.close()
+                _LAND_POLYS.append((p.getBounds(), p))
+    return _LAND_POLYS
+
+
+def land_clipped(name, path):
+    """Land-Pfad eines Gebiets (an der Küste beschnitten); einmal berechnet und im Cache abgelegt."""
+    if name in _LANDCLIP:
+        return _LANDCLIP[name]
+    import hashlib
+    key = hashlib.md5(bytes(path.serialize())).hexdigest()[:12]
+    fn = os.path.join(CACHE, f"landclip_{key}.bin")
+    out = None
+    if os.path.exists(fn):
+        out = skia.Path()
+        if not out.readFromMemory(open(fn, "rb").read()):
+            out = None
+    if out is None:
+        b = path.getBounds()
+        sub = skia.Path()
+        for lb, lp in land_polys():
+            if skia.Rect.Intersects(lb, b):
+                sub.addPath(lp)
+        out = safe_op(path, sub, skia.PathOp.kIntersect_PathOp, fallback=path)
+        try:
+            open(fn, "wb").write(bytes(out.serialize()))
+        except Exception:
+            pass
+    _LANDCLIP[name] = out
+    return out
+
+
+class TerritoryFlags(Obj):
+    """Gebiete mit ihrer Flagge gefüllt – in der Übersicht kräftig (Bündniskarte), in der Nahansicht hauchdünn.
+
+    entries: dict(name, flag, side ('cp'/'en'/None), t_on, t_off, rect=None) – name ist ein Land der Karte 1914
+             oder "de_held"/"fr_held" (deutsch bzw. französisch gehaltenes Gebiet nach dem Frontverlauf von `front`).
+    Die Flagge wird über den sichtbaren Teil des Gebiets gestreckt, so bleibt sie in jeder Zoomstufe erkennbar.
+    """
+    z = 4
+
+    def __init__(self, entries, t0, t1, front=None, wf_n=None, wf_s=None, alpha_local=0.15, alpha_map=0.88, borders=True):
+        self.entries, self.t0, self.t1, self.front = entries, t0, t1, front
+        self.wf_n, self.wf_s = np.array(wf_n) if wf_n is not None else None, np.array(wf_s) if wf_s is not None else None
+        self.alpha_local, self.alpha_map, self.borders = alpha_local, alpha_map, borders
+        self.fin, self.fout = 1.2, 1.5
+        self.paths = load_countries()
+        self._held = (None, None, None)
+        self._base = None
+
+    def held(self, t):
+        full, key = self.front.line_at(t)
+        if self._held[0] == key:
+            return self._held[1], self._held[2]
+        line = np.concatenate([self.wf_n, full, self.wf_s])
+        close = [(47.40, 7.60), (47.40, 16.0), (55.5, 16.0), (55.5, 3.0)]
+        P = merc_poly_path(np.concatenate([line, np.array(close)]))
+        if self._base is None:
+            fr = land_clipped("France", self.paths["France"])
+            u = safe_op(land_clipped("German Empire", self.paths["German Empire"]), land_clipped("Belgium", self.paths["Belgium"]),
+                        skia.PathOp.kUnion_PathOp)
+            u = safe_op(u, land_clipped("Luxembourg", self.paths["Luxembourg"]), skia.PathOp.kUnion_PathOp)
+            u = safe_op(u, fr, skia.PathOp.kUnion_PathOp)
+            self._base = (fr, u)
+        fr, u = self._base
+        de = safe_op(P, u, skia.PathOp.kIntersect_PathOp, fallback=skia.Path())
+        frh = safe_op(fr, P, skia.PathOp.kDifference_PathOp, fallback=skia.Path())
+        self._held = (key, de, frh)
+        return de, frh
+
+    def zoom_alpha(self, v):
+        k = smooth((math.log(max(v.cam.width, 1)) - math.log(240)) / (math.log(1500) - math.log(240)))
+        return self.alpha_local + (self.alpha_map - self.alpha_local) * k, k
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0:
+            return
+        za, k = self.zoom_alpha(v)
+        # sichtbarer Boden (vor der Kamera) als Viereck in Mercator
+        quad = skia.Path()
+        for i, (sx, sy) in enumerate(((-0.2 * W, -0.15 * H), (1.2 * W, -0.15 * H), (1.2 * W, 1.2 * H), (-0.2 * W, 1.2 * H))):
+            X, Y = v.unproject(sx, sy)
+            quad.moveTo(X, Y) if i == 0 else quad.lineTo(X, Y)
+        quad.close()
+        qb = quad.getBounds()
+        M = v.skmatrix()
+        screen = skia.Rect.MakeWH(W, H)
+        drawn = []
+        held = None
+        for e in self.entries:
+            ea = a * fade(t, e["t_on"], e.get("t_off", 1e9), 1.2, 1.2)
+            if ea <= 0.003:
+                continue
+            name = e["name"]
+            if name in ("de_held", "fr_held"):
+                if held is None:
+                    held = self.held(t)
+                path = held[0] if name == "de_held" else held[1]
+            elif e.get("path") is not None:
+                if "_lc" not in e:
+                    e["_lc"] = land_clipped(name, e["path"])
+                path = e["_lc"]
+            else:
+                path = land_clipped(name, self.paths[name])
+            if not skia.Rect.Intersects(path.getBounds(), qb):
+                continue
+            clipped = safe_op(path, quad, skia.PathOp.kIntersect_PathOp, fallback=skia.Path())
+            if clipped is None or clipped.isEmpty():
+                continue
+            sp = skia.Path(clipped)
+            sp.transform(M)
+            b0 = sp.getBounds()
+            vis = skia.Rect.MakeLTRB(max(0.0, b0.left()), max(0.0, b0.top()), min(float(W), b0.right()), min(float(H), b0.bottom()))
+            if vis.isEmpty():
+                continue
+            target = vis
+            # Übersicht: Flagge über das ganze Land (oder das angegebene Rechteck) gestreckt
+            src = e.get("rect")
+            if src:
+                x0, y0 = merc(src[0], src[1])
+                x1, y1 = merc(src[2], src[3])
+                corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+            else:
+                b = path.getBounds()
+                corners = [(b.left(), b.top()), (b.right(), b.top()), (b.right(), b.bottom()), (b.left(), b.bottom())]
+            pc = [v.proj_xy(x, y) for x, y in corners]
+            if all(q is not None for q in pc):
+                xs, ys = [q[0] for q in pc], [q[1] for q in pc]
+                full = skia.Rect.MakeLTRB(min(xs), min(ys), max(xs), max(ys))
+                kk = full.width() / W
+                f = smooth((kk - 1.4) / 2.2)
+                target = skia.Rect.MakeLTRB(full.left() + (vis.left() - full.left()) * f, full.top() + (vis.top() - full.top()) * f,
+                                            full.right() + (vis.right() - full.right()) * f, full.bottom() + (vis.bottom() - full.bottom()) * f)
+            if e.get("flag"):
+                img = flag_texture(e["flag"])
+                p = skia.Paint(AntiAlias=True)
+                p.setAlphaf(clamp(za * ea))
+                c.save()
+                c.clipPath(sp, skia.ClipOp.kIntersect, True)
+                c.drawImageRect(img, skia.Rect.MakeWH(img.width(), img.height()), target, SAMPLING, p)
+                c.restore()
+            drawn.append((sp, e, ea))
+        if self.borders:
+            bk = smooth((v.cam.width - 250) / 300)
+            for sp, e, ea in drawn:
+                if not e.get("side") or bk <= 0:
+                    continue
+                col = TR_RED if e["side"] == "cp" else AL_BLUE
+                c.drawPath(sp, paint(skia.Color4f(0, 0, 0, 0.7 * ea * bk), "stroke", 3.2))
+                c.drawPath(sp, paint(c4(col, 0.9 * ea * bk), "stroke", 1.6))
+
+
+class Burning(Obj):
+    """Brennende Wälder: Brandherde entstehen nach und nach in einem Gebiet, flackern und qualmen."""
+    z = 12
+
+    def __init__(self, pts, t0, t1, n=40, ramp=12.0, seed=5, size=1.0):
+        self.samples = _poly_samples(pts, n, seed)
+        rng = np.random.default_rng(seed)
+        self.start = t0 + rng.random(n) ** 0.7 * ramp
+        self.life = 25 + rng.random(n) * 40
+        self.ph = rng.random(n) * 10
+        self.sz = 0.55 + rng.random(n) ** 1.5 * 0.85
+        self.ntg = rng.integers(2, 6, n)
+        self.tg = rng.random((n, 6, 3))
+        self.t0, self.t1, self.size = t0, t1, size
+        self.fin, self.fout = 0.5, 3.0
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0 or v.cam.width > 120:
+            return
+        mpx = 1.0 / (v.km_per_px * 1000.0)
+        for k, (la, lo) in enumerate(self.samples):
+            age = t - self.start[k]
+            if age < 0:
+                continue
+            fa = a * smooth(age / 1.5) * (1 - smooth((age - self.life[k]) / 8.0))
+            if fa <= 0.01:
+                continue
+            p = v.proj(la, lo)
+            if p is None:
+                continue
+            ds = v.depth_scale(la, lo)
+            r = min(70, max(5, 160 * mpx * ds * self.size))
+            r *= self.sz[k]
+            fl = 0.75 + 0.25 * math.sin(t * 7.3 + self.ph[k]) * math.sin(t * 3.1 + self.ph[k] * 2)
+            x, y = p
+            # Rauchsäule (zieht nach rechts ab)
+            for j in range(4):
+                ph = ((t * 0.14 + self.ph[k] + j / 4) % 1.0)
+                soft_circle(c, x + ph * r * 2.4, y - r * 0.8 - ph * r * 5.5, r * (0.8 + 2.4 * ph),
+                            skia.Color4f(0.09, 0.08, 0.075, 0.40 * fa * (1 - ph) * smooth(ph / 0.15)))
+            # Glut am Boden
+            soft_circle(c, x, y, r * 1.7, skia.Color4f(1, 0.28, 0.04, 0.26 * fa * fl), skia.BlendMode.kPlus)
+            soft_circle(c, x, y - r * 0.15, r * 0.7, skia.Color4f(1, 0.6, 0.2, 0.35 * fa * fl), skia.BlendMode.kPlus)
+            # Flammenzungen, jede anders hoch, breit und flackernd
+            nt = int(self.ntg[k])
+            for j in range(nt):
+                u0, u1, u2 = self.tg[k, j]
+                off = ((j + 0.5) / nt - 0.5) * r * 1.3 + (u0 - 0.5) * r * 0.25
+                cen = 1.0 - abs((j + 0.5) / nt - 0.5) * 1.2
+                hh = r * (0.7 + 1.1 * cen * (0.6 + 0.6 * u1)) * (0.75 + 0.25 * math.sin(t * (8.0 + 4 * u2) + self.ph[k] * 3 + j * 2.1))
+                ww = r * (0.14 + 0.14 * u2)
+                sway = r * 0.22 * math.sin(t * (4.0 + 3 * u1) + self.ph[k] + j * 1.7)
+                fx = x + off
+                path = skia.Path()
+                path.moveTo(fx - ww, y)
+                path.cubicTo(fx - ww * 1.2, y - hh * 0.4, fx + sway * 0.5 - ww * 0.4, y - hh * 0.75, fx + sway, y - hh)
+                path.cubicTo(fx + sway * 0.5 + ww * 0.2, y - hh * 0.6, fx + ww * 1.2, y - hh * 0.35, fx + ww, y)
+                path.close()
+                sh = skia.GradientShader.MakeLinear([skia.Point(fx, y), skia.Point(fx, y - hh)],
+                                                    [skia.Color4f(1, 0.95, 0.65, 0.95 * fa * fl).toColor(),
+                                                     skia.Color4f(1, 0.55, 0.10, 0.80 * fa * fl).toColor(),
+                                                     skia.Color4f(0.8, 0.12, 0.02, 0.0).toColor()], [0.0, 0.4, 1.0])
+                pp = skia.Paint(AntiAlias=True, Shader=sh)
+                pp.setBlendMode(skia.BlendMode.kPlus)
+                c.drawPath(path, pp)
+            # Funken
+            for j in range(3):
+                ph = ((t * 0.6 + self.ph[k] * 1.3 + j / 3) % 1.0)
+                sx = x + math.sin(self.ph[k] * 5 + j * 2.3 + t) * r * 0.5
+                c.drawCircle(sx, y - r * 0.4 - ph * r * 2.6, max(1.0, r * 0.05),
+                             paint(skia.Color4f(1, 0.75, 0.3, 0.8 * fa * (1 - ph))))
+
+
+class Rain(Screen):
+    z = 40
+
+    def __init__(self, t0, t1, n=420):
+        self.t0, self.t1, self.n = t0, t1, n
+        self.fin, self.fout = 1.5, 1.5
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0:
+            return
+        c.drawRect(skia.Rect.MakeWH(W, H), paint(skia.Color4f(0.10, 0.12, 0.15, 0.22 * a)))
+        p = paint(skia.Color4f(0.75, 0.80, 0.88, 0.35 * a), "stroke", 1.2)
+        for i in range(self.n):
+            rnd = random.Random(i * 13)
+            sp = 900 + rnd.random() * 600
+            x = (rnd.random() * W * 1.2 + t * 160) % (W * 1.2) - W * 0.1
+            y = (rnd.random() * H + t * sp) % H
+            c.drawLine(x, y, x - 6, y + 26, p)
+
+
+class BigWord(Screen):
+    """Großes Stichwort in der Bildmitte (z. B. „DIE HÖLLE“)."""
+    z = 57
+
+    def __init__(self, text, t0, t1, y=0.42, color=None, size=96):
+        self.text, self.t0, self.t1, self.y, self.color, self.size = text, t0, t1, y, color or WHITE, size
+        self.fin, self.fout = 0.35, 0.8
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0:
+            return
+        g = ease_out((t - self.t0) / 0.6)
+        f = font("title", self.size * (1.08 - 0.08 * g))
+        draw_text(c, self.text, W / 2, H * self.y, f, c4(self.color, a), "center", spacing=10, halo=8, halo_color=skia.Color4f(0, 0, 0, 0.6 * a))
+
+
+class FrontPulse(Obj):
+    """„Blutpumpe“: die Frontlinie pulsiert rot wie ein Herzschlag."""
+    z = 9
+
+    def __init__(self, front, t0, t1, bpm=70):
+        self.front, self.t0, self.t1, self.bpm = front, t0, t1, bpm
+        self.fin, self.fout = 0.8, 1.5
+
+    def draw(self, c, v, t):
+        a = self.alpha(t)
+        if a <= 0 or v.cam.width > 400:
+            return
+        beat = ((t - self.t0) * self.bpm / 60.0) % 1.0
+        pulse = math.exp(-beat * 6) + 0.6 * math.exp(-max(0, beat - 0.22) * 9) * (beat > 0.22)
+        full, _ = self.front.line_at(t)
+        for run in screen_runs(v, full):
+            path = path_from(catmull(run, 3))
+            c.drawPath(path, paint(skia.Color4f(0.85, 0.02, 0.02, (0.25 + 0.55 * pulse) * a), "stroke", 18 + 30 * pulse, blur=10 + 10 * pulse))

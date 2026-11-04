@@ -13,7 +13,8 @@ import engine as E
 import vgeo as G
 from engine import (Arrow, Area, Barrage, Battle, BattleMarker, BilanzPanel, Bird, Cam, Caption, ChapterCard, Convoy,
                     CraterField, Credits, DateStamp, Explosion, Fire, FrontMap, GasCloud, Guns, Label, LossBadge, MeasureLine,
-                    Polyline, Pulse, Quote, ShellArcs, Snow, Tint, TitleCard, Token, VFort)
+                    Polyline, Pulse, Quote, ShellArcs, Snow, Tint, TitleCard, Token, VFort, TerritoryFlags, Burning, Rain, BigWord,
+                    FrontPulse)
 from narration import SEGMENTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -155,6 +156,65 @@ def bearing(a, b):
     return math.degrees(math.atan2(dx, dy)) % 360
 
 
+def front_line(key):
+    import numpy as np
+    return np.concatenate([np.array(G.WEST), E.resample(G.FRONTS[key], 240), np.array(G.SOUTH)])
+
+
+def anchor_on(line, pos, side, dist_km):
+    """Punkt hinter der Front: nächster Frontpunkt zu pos, um dist_km zur eigenen Seite versetzt."""
+    import numpy as np
+    la, lo = pos
+    k = math.cos(math.radians(la))
+    d2 = (line[:, 0] - la) ** 2 + ((line[:, 1] - lo) * k) ** 2
+    i = int(np.argmin(d2))
+    j0, j1 = max(0, i - 3), min(len(line) - 1, i + 3)
+    ty, tx = line[j1, 0] - line[j0, 0], (line[j1, 1] - line[j0, 1]) * k
+    L = math.hypot(ty, tx) or 1.0
+    ny, nx = -tx / L, ty / L
+    d = dist_km / 111.0
+    ger = np.concatenate([line, np.array(G.GER_CLOSE)])
+    for sgn in (1, -1):
+        cand = (line[i, 0] + sgn * ny * d, line[i, 1] + sgn * nx * d / k)
+        inside = bool(E.inside_poly(ger, np.array([cand]))[0])
+        if inside == (side == "de"):
+            return cand
+    return (float(la), float(lo))
+
+
+def anchor_pos(key, pos, side, dist_km):
+    return anchor_on(front_line(key), pos, side, dist_km)
+
+
+def dist_to_line_km(line, pos):
+    import numpy as np
+    la, lo = pos
+    k = math.cos(math.radians(la))
+    return float(np.sqrt(((line[:, 0] - la) ** 2 + ((line[:, 1] - lo) * k) ** 2).min()) * 111.0)
+
+
+def follow_front(units, front):
+    """Verbände bleiben nach ihrer letzten Bewegung stehen und rücken mit jeder Frontverschiebung mit."""
+    import numpy as np
+    for u in units:
+        if not getattr(u, "persist", False):
+            continue
+        last = u.keys[-1][0]
+        pos = (u.keys[-1][1], u.keys[-1][2])
+        line0, _ = front.line_at(last + 0.01)
+        dist = min(1.6, max(0.35, dist_to_line_km(line0, pos)))
+        for ta, tb, mid in front.states[1:]:
+            if ta <= last + 0.05 or ta >= u.t1:
+                continue
+            line = np.concatenate([front.west, mid, front.south])
+            new = anchor_on(line, pos, u.side, dist)
+            if math.hypot(new[0] - pos[0], (new[1] - pos[1]) * 0.65) * 111.0 > 0.04:
+                u.keys.append((ta, pos[0], pos[1]))
+                u.keys.append((tb, new[0], new[1]))
+                pos = new
+        u.keys.sort()
+
+
 def shift(pts, dlat=0.0, dlon=0.0):
     return [(la + dlat, lo + dlon) for la, lo in pts]
 
@@ -179,8 +239,20 @@ def build():
     U = E.Unit
     w = T.w
 
+    ALL_UNITS, ALL_ENEM = [], []
+
     def troops(units, t0, t1, enemies):
-        T.add(E.Troops(units, t0, t1, enemies))
+        base = len(ALL_UNITS)
+        for u in units:
+            if not getattr(u, "no_persist", False):
+                u.persist = True
+            else:
+                u.t1 = min(u.t1, t1)
+            ALL_UNITS.append(u)
+        ALL_ENEM.extend((base + i, base + j) for i, j in enemies)
+
+    # Frontverlauf (Linie erscheint ab dem Frontbogen; Flaggen-Gebiete nutzen ihn schon vorher)
+    front = T.add(FrontMap([(0, 0, G.FRONTS["feb21"])], G.WEST, G.SOUTH, G.GER_CLOSE, G.FR_CLOSE, 1e9, 1e9, strength=0.0))
 
     # ------------------------------------------------------------ 0 · Luftaufnahme & Titel
     T.mood(0, "intro")
@@ -210,7 +282,7 @@ def build():
     s = T.say("europa", pre=0.4, post=2.0)
     T.say("westfront", pre=0.5, post=2.0)
     T.say("falkenhayn", pre=0.6, post=2.0)
-    T.add(countries_layer(s - 1.5, T.end("europa") + 2.0, w("europa", 6.8), w("europa", 16.2), w("europa", 12.1), w("europa", 13.5)))
+    flags_obj = T.add(TerritoryFlags([], s - 1.5, 1e9, front=front, wf_n=G.WF_N, wf_s=G.WF_S))
     T.add(Label(52.5, 13.4, "Deutsches Reich", t0=w("europa", 8.2), t1=w("europa", 22.0), style="country", size=30))
     T.add(Label(47.6, 18.0, "Österreich-Ungarn", t0=w("europa", 9.7), t1=w("europa", 22.0), style="country", size=28))
     T.add(Label(38.8, 33.5, "Osmanisches Reich", t0=w("europa", 12.1), t1=w("europa", 22.0), style="country", size=28))
@@ -232,14 +304,12 @@ def build():
     T.add(Label(50.75, 4.0, "BELGIEN", t0=w("europa", 27.2), t1=T.end("europa") + 3.0, size=22, style="sea", dot=False))
 
     s = T.vstart["westfront"]
-    T.add(borders_layer(T.end("europa") - 1.0, T.end("falkenhayn") + 2.0))
     T.cam(s + 0.2, Cam(49.2, 3.6, 760, 0, 0))
     T.add(Label(48.95, 3.55, "Marne", "September 1914", t0=w("westfront", 0.4), t1=w("westfront", 7.0), size=26))
     T.add(Battle(48.95, 3.30, 25, w("westfront", 0.6), w("westfront", 5.5), rate=6, intensity=0.9))
     T.add(Arrow([(48.90, 3.20), (49.15, 3.25), (49.40, 3.30)], "al", t0=w("westfront", 2.6), grow=2.0, t1=w("westfront", 7.0), width=10))
     # „durchgehende Linie“ 7.6 → Westfront wächst von der Nordsee (10.4) bis zur Schweiz (13.5)
     T.cam(w("westfront", 6.0), Cam(49.4, 4.6, 1000, 0, 0))
-    T.add(Area(G.OCCUPIED, RED, t0=w("westfront", 9.0), t1=T.end("falkenhayn") + 2.0, alpha=0.20, outline=False))
     T.add(Polyline(G.WESTERN_FRONT, E.hexc("#ff5a4a"), t0=w("westfront", 9.6), t1=T.end("falkenhayn") + 2.0, width=5, grow=4.6, glow=True))
     T.add(Label(51.25, 2.45, "Nordsee", t0=w("westfront", 10.4), t1=w("westfront", 16.0), size=22, style="sea", dot=False))
     T.add(Label(47.30, 7.70, "Schweiz", t0=w("westfront", 13.3), t1=w("westfront", 16.0), size=22))
@@ -287,7 +357,6 @@ def build():
     T.add(Caption([(None, "Fort Douaumont: das größte und stärkste Fort"), (None, "Stahlbeton, Panzertürme, auf 388 m Höhe")],
                   w("festung", 11.0), w("festung", 17.0), pos="br", width=600))
     T.cam(w("festung", 16.5), Cam(50.0, 5.0, 330, 0, 0))
-    T.add(borders_layer(w("festung", 15.5), w("festung", 27.5)))
     T.add(Label(50.75, 4.45, "BELGIEN", t0=w("festung", 18.0), t1=w("festung", 26.0), size=24, style="sea", dot=False))
     T.add(Label(*P["liege"], "Lüttich", t0=w("festung", 21.8), t1=w("festung", 26.0), size=24))
     T.add(Label(*P["namur"], "Namur", t0=w("festung", 22.6), t1=w("festung", 26.0), size=24))
@@ -301,9 +370,9 @@ def build():
 
     s = T.vstart["frontbogen"]
     T.cam(s - 0.3, Cam(49.02, 5.42, 95, 30, 0))
-    front = T.add(FrontMap([(0, 0, G.FRONTS["feb21"])], G.WEST, G.SOUTH, G.GER_CLOSE, G.FR_CLOSE, s + 0.5, 1e9))
+    front.t0, front.t1 = s + 0.5, 1e9
     T.add(Label(49.10, 5.47, "Frontbogen von Verdun", t0=w("frontbogen", 1.2), t1=w("frontbogen", 10.0), size=26, dot=False, align="center", dx=0))
-    T.add(Caption([([DE], "rot: deutsch besetzt"), ([FR], "blau: französisch")], w("frontbogen", 5.3), w("frontbogen", 14.5), pos="br", width=380))
+    T.add(Caption([([DE], "deutsch besetzt"), ([FR], "französisch")], w("frontbogen", 5.3), w("frontbogen", 14.5), pos="br", width=360))
     rail_sm = [(49.160, 5.384), (49.120, 5.410), (49.060, 5.460), (48.990, 5.505), (48.890, 5.545), (48.770, 5.590)]
     rail_cm = [(49.160, 5.384), (49.150, 5.300), (49.140, 5.170), (49.125, 5.080), (49.093, 4.900)]
     T.add(Polyline(rail_sm, E.hexc("#e8e4d8"), t0=w("frontbogen", 10.4), t1=w("frontbogen", 22.0), width=3, grow=1.2, dash=(10, 6)))
@@ -360,11 +429,15 @@ def build():
     fr_hold = [(49.282, 5.320), (49.290, 5.350), (49.287, 5.420), (49.276, 5.445), (49.262, 5.478)]
     de_mid = [(49.300, 5.312), (49.304, 5.345), (49.302, 5.380), (49.304, 5.412), (49.292, 5.448), (49.272, 5.488)]
     k = "trommelfeuer"
-    units = [U("de", 8000, [(w(k, 23.0), *a), (w(k, 26.0) + 6.0, *b)], facing=180, area=60, aspect=4.0, fire=[(w(k, 25.0), T.end(k) + 2)],
-               t1=T.end(k) + 2.2, seed=10 + i) for i, (a, b) in enumerate(zip(de_start, de_mid))]
-    units += [U("fr", 6000, [(w(k, 0.0), *a)], facing=0, area=60, aspect=4.0, fire=[(w(k, 25.0), T.end(k) + 2)], t1=T.end(k) + 2.2,
-                seed=20 + i, losses=[(w(k, 10.0), 900)]) for i, a in enumerate(fr_hold)]
-    troops(units, w(k, 0.0), T.end(k) + 2.2, [(0, 6), (1, 7), (3, 8), (4, 9), (5, 10)])
+    vm = T.vstart["vormarsch"]
+    units = [U("de", 8000, [(w(k, 23.0), *a), (w(k, 26.0) + 6.0, *b), (vm, *b), (w("vormarsch", 9.0), *anchor_pos("feb24", b, "de", 0.5))],
+               facing=180, area=60, aspect=4.0, fire=[(w(k, 25.0), w("vormarsch", 16.0))], losses=[(w("vormarsch", 10.0), 2600)],
+               seed=10 + i) for i, (a, b) in enumerate(zip(de_start, de_mid))]
+    units += [U("fr", 6000, [(w(k, 0.0), *a), (w("vormarsch", 4.0), *a), (w("vormarsch", 9.0), *anchor_pos("feb24", a, "fr", 0.6))],
+                facing=0, area=60, aspect=4.0, fire=[(w(k, 25.0), w("vormarsch", 13.0))], seed=20 + i,
+                losses=[(w(k, 10.0), 900), (w("vormarsch", 9.6), 2700)]) for i, a in enumerate(fr_hold)]
+    troops(units, w(k, 0.0), T.end(k) + 2.2, [(0, 6), (1, 7), (2, 8), (3, 8), (4, 9), (5, 10)])
+    T.add(Burning(fr_pos, w(k, 5.0), T.end("vormarsch") + 30.0, n=70, ramp=24.0, seed=41))
 
     # ---------------- Bois des Caures
     s = T.vstart["caures"]
@@ -374,6 +447,7 @@ def build():
     T.add(Label(49.2735, 5.3880, "Bois des Caures", t0=s, t1=T.end(k) + 1, size=26, dot=False, dx=0, dy=60, align="center"))
     T.add(Caption([([FR], "Oberstleutnant Émile Driant"), (None, "56. und 59. Jägerbataillon")], w(k, 6.4), w(k, 13.0), pos="br", width=480))
     T.add(Barrage([(49.292, 5.372), (49.292, 5.404), (49.276, 5.404), (49.276, 5.372)], s, w(k, 13.0), rate=30, seed=5, size=0.8))
+    T.add(Burning([(49.292, 5.372), (49.292, 5.404), (49.276, 5.404), (49.276, 5.372)], s + 0.5, T.end(k) + 25.0, n=22, ramp=8.0, seed=45))
     T.add(CraterField([(G.ZONES["nord"], w("trommelfeuer", 6.0), T.end("vormarsch")), (G.ZONES["douaumont"], w("vormarsch", 2.0), w("vormarsch", 2.0) + 180.0)],
                       w("trommelfeuer", 5.0), 1e9))
     units = [
@@ -399,15 +473,7 @@ def build():
     for name, tw in (("haumont", 3.4), ("samogneux", 4.8), ("beaumont", 5.9)):
         T.add(Label(*P[name], name.capitalize(), "erobert", t0=w(k, tw), t1=T.end(k) + 0.5, size=22, color=E.hexc("#ffb8a8")))
     T.add(Barrage([(49.262, 5.330), (49.262, 5.490), (49.240, 5.500), (49.240, 5.340)], s, w(k, 12.0), rate=30, seed=7, size=0.85))
-    units = []
-    for i, (a, b) in enumerate(zip(de_mid, [(49.262, 5.330), (49.262, 5.360), (49.266, 5.392), (49.268, 5.425), (49.262, 5.455), (49.252, 5.490)])):
-        units.append(U("de", 8000, [(s, *a), (w(k, 9.0), *b)], facing=180, area=60, aspect=4.0, fire=[(s, w(k, 16.0))],
-                       losses=[(w(k, 10.0), 2600)], t1=T.end(k) + 1.0, seed=40 + i))
-    for i, a in enumerate([(49.270, 5.335), (49.276, 5.365), (49.276, 5.410), (49.268, 5.445), (49.256, 5.478)]):
-        b = (a[0] - 0.026, a[1])
-        units.append(U("fr", 5800, [(s, *a), (w(k, 4.0), *a), (w(k, 9.0), *b)], facing=0, area=60, aspect=4.0, fire=[(s, w(k, 13.0))],
-                       losses=[(w(k, 9.6), 2700)], t1=T.end(k) + 1.0, seed=50 + i))
-    troops(units, s, T.end(k) + 1.0, [(0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 10)])
+    T.add(Burning([(49.262, 5.330), (49.262, 5.490), (49.240, 5.500), (49.240, 5.340)], s, T.end(k) + 30.0, n=35, ramp=10.0, seed=43))
     tok_de.keys.append((w(k, 10.4), 115000))
     tok_fr.keys.append((w(k, 11.1), 10000))
     tok_de.lat, tok_de.lon = 49.300, 5.40
@@ -426,6 +492,7 @@ def build():
     front.states.append((w(k, 23.0), w(k, 27.0), E.resample(G.FRONTS["feb26"], 240)))
     forts["Douaumont"].owners.append((w(k, 22.4), "de"))
     garrison = U("fr", 57, [(s, 49.2170, 5.4390)], facing=20, area=25, aspect=1.5, fire=[], t1=w(k, 22.8), seed=61)
+    garrison.no_persist = True
     raid = U("de", 98, [(w(k, 11.4), 49.2235, 5.4480), (w(k, 17.2), 49.2185, 5.4405), (w(k, 21.0), 49.2172, 5.4392)], facing=210,
              area=18, aspect=2.0, t1=T.end(k) + 1.5, seed=62)
     troops([garrison, raid], s, T.end(k) + 1.5, [])
@@ -502,6 +569,7 @@ def build():
     T.add(Label(*P["cote304"], "Höhe 304", t0=w(k, 14.7), t1=T.end("hoelle"), size=26, dx=-14, align="right"))
     T.add(CraterField([(G.ZONES["links"], w(k, 8.0), w("hoelle", 14.0))], w(k, 7.5), 1e9))
     T.add(Barrage([(49.250, 5.180), (49.252, 5.290), (49.218, 5.292), (49.212, 5.185)], w(k, 8.2), T.end(k) + 1.0, rate=34, seed=11, size=0.85))
+    T.add(Burning([(49.250, 5.180), (49.252, 5.290), (49.218, 5.292), (49.212, 5.185)], w(k, 8.6), T.end(k) + 25.0, n=35, ramp=14.0, seed=55))
     units = [U("de", 10000, [(w(k, 8.0), 49.262, 5.205), (w(k, 21.0), 49.236, 5.207), (w(k, 25.5), 49.228, 5.208)], facing=180, area=55, aspect=4.0,
                losses=[(w(k, 18.8), 3200)], fire=[(w(k, 11.0), T.end(k))], t1=T.end(k) + 1.5, seed=71),
              U("de", 10000, [(w(k, 8.4), 49.262, 5.262), (w(k, 21.0), 49.243, 5.260), (w(k, 27.0), 49.236, 5.260)], facing=180, area=55, aspect=4.0,
@@ -518,8 +586,34 @@ def build():
     cf_hoelle = T.add(CraterField([(G.ZONES["fleury"], w(k, 1.0), w(k, 12.0))], w(k, 0.5), 1e9))
     T.cam(s - 0.2, Cam(49.225, 5.33, 18, 56, 20))
     T.cam(w(k, 10.0), Cam(49.218, 5.405, 9, 58, 40))
-    T.add(Tint(skia.Color4f(0.12, 0.10, 0.08, 0.28), w(k, 4.0), T.end(k) + 0.5))
-    T.add(Caption([(None, "„die Hölle“ · „die Knochenmühle“ · „die Blutpumpe“")], w(k, 24.0), T.end(k) + 1.2, pos="br", width=620))
+    T.add(Tint(skia.Color4f(0.12, 0.10, 0.08, 0.18), w(k, 4.0), T.end(k) + 0.5))
+    # „Wälder verschwinden“ 4.9: Waldbrände über dem ganzen Schlachtfeld
+    T.add(Burning([(49.245, 5.37), (49.245, 5.49), (49.19, 5.49), (49.19, 5.38)], w(k, 4.6), T.end(k) + 20.0, n=48, ramp=8.0, seed=51))
+    # „Dörfer zerfallen zu Staub“ 6.5
+    for i, key in enumerate(("fleury", "douaumont_dorf", "vaux_dorf", "bezonvaux", "louvemont", "ornes")):
+        T.add(Explosion(*P[key], w(k, 6.4) + i * 0.25, 0.55))
+    # „Schlamm und Kälte“ 12.9
+    T.add(Rain(w(k, 11.0), w(k, 18.8)))
+    # „Hölle“ 24.5 · „Knochenmühle“ 25.4 · „Blutpumpe“ 26.7
+    T.cam(w(k, 21.5), Cam(49.205, 5.428, 7.5, 58, 18))
+    T.add(Barrage([(49.236, 5.380), (49.236, 5.480), (49.200, 5.490), (49.198, 5.385)], w(k, 23.6), T.end(k) + 3.2, rate=45, seed=53, size=0.9))
+    T.add(BigWord("DIE HÖLLE", w(k, 24.3), T.end(k) + 3.3, y=0.30, color=E.hexc("#ff9a3c"), size=82))
+    T.add(BigWord("DIE KNOCHENMÜHLE", w(k, 25.3), T.end(k) + 3.3, y=0.43, color=E.hexc("#efe6d6"), size=82))
+    T.add(BigWord("DIE BLUTPUMPE", w(k, 26.6), T.end(k) + 3.3, y=0.56, color=E.hexc("#ff3b30"), size=82))
+    T.add(FrontPulse(front, w(k, 26.4), T.end(k) + 3.4))
+    T.add(Tint(skia.Color4f(0.35, 0.0, 0.0, 0.16), w(k, 26.6), T.end(k) + 3.4, fin=0.8, fout=1.2))
+    mill = []
+    for wave in range(4):
+        for j, lo in enumerate((5.388, 5.408, 5.428, 5.448, 5.468)):
+            t_go = w(k, 18.6) + wave * 2.1 + j * 0.15
+            for side, rear, close, face in (("de", 2.6, 0.25, 185), ("fr", 2.6, 0.25, 5)):
+                base = anchor_pos("may31", (49.215, lo), side, close)
+                start = anchor_pos("may31", (49.215, lo), side, rear)
+                mill.append(U(side, 600, [(t_go, *start), (t_go + 2.8, *base)], facing=face, area=30, aspect=3.0,
+                              losses=[(t_go + 3.0, 470)], fire=[(t_go + 2.2, t_go + 4.5)], seed=900 + wave * 20 + j * 2 + (side == "fr")))
+    for u in mill:
+        u.no_persist = True      # Bild für die „Knochenmühle“, keine echten Verbände
+    troops(mill, w(k, 18.6), T.end(k) + 3.5, [(i, i + 1) for i in range(0, len(mill), 2)])
     T.cam(T.end(k) + 1.0, Cam(49.215, 5.43, 8, 56, 60), "linear")
 
     s = T.vstart["mai"]
@@ -556,6 +650,7 @@ def build():
     T.add(CraterField([(G.ZONES["fleury"], w(k, 0.0), w(k, 0.1))], w(k, 0.0), 1e9))
     garr = U("fr", 600, [(s, 49.2005, 5.4700)], facing=20, area=10, aspect=1.4, fire=[(w(k, 7.0), w("raynal", 24.0))],
              losses=[(w(k, 24.6), 60), (w("raynal", 3.0), 40)], t1=w("raynal", 25.6), seed=91)
+    garr.no_persist = True
     attackers = [U("de", 3000, [(s, 49.2120, 5.4650), (w(k, 7.0), 49.2035, 5.4690)], facing=170, area=26, aspect=2.5,
                    losses=[(w(k, 21.0), 700)], fire=[(w(k, 7.0), w("raynal", 24.0))], t1=T.end("raynal") + 1.0, seed=92),
                  U("de", 3000, [(s, 49.2090, 5.4840), (w(k, 7.2), 49.2025, 5.4745)], facing=230, area=26, aspect=2.5,
@@ -607,6 +702,7 @@ def build():
                fire=[(w(k, 1.0), T.end(k))], t1=T.end(k) + 1.0, seed=104)]
     troops(units, s, T.end(k) + 1.0, [(0, 2), (1, 3), (0, 3)])
     T.add(Barrage([(49.202, 5.420), (49.202, 5.445), (49.190, 5.445), (49.190, 5.420)], w(k, 0.5), T.end(k), rate=16, seed=15, size=0.7))
+    T.add(Burning([(49.204, 5.405), (49.204, 5.448), (49.188, 5.448), (49.188, 5.405)], w(k, 1.0), T.end(k) + 20.0, n=24, ramp=8.0, seed=57))
     T.add(MeasureLine(P["fleury"], (49.1605, 5.3845), "ca. 5 km", w(k, 5.0), w(k, 10.5)))
     T.cam(w(k, 4.6), Cam(49.180, 5.405, 14, 50, 15))
     T.add(Quote(["Ils ne passeront pas !", "Sie werden nicht durchkommen!"], "GENERAL NIVELLE · 23. JUNI 1916", w(k, 12.6), w(k, 18.0), size=52))
@@ -616,7 +712,6 @@ def build():
     s = T.vstart["somme"]
     k = "somme"
     T.cam(s - 0.4, Cam(50.5, 12.0, 3200, 0, 0))
-    T.add(borders_layer(s - 1.0, T.end(k) + 1.0))
     T.add(Polyline(G.WESTERN_FRONT, E.hexc("#ff5a4a"), t0=s - 0.5, t1=T.end(k) + 1.0, width=4, glow=True))
     T.add(Pulse(*P["verdun"], s, T.end(k), r=26))
     T.add(Label(*P["verdun"], "Verdun", t0=s, t1=T.end(k), size=22))
@@ -672,6 +767,8 @@ def build():
     T.add(ShellArcs(P["baleycourt"], P["douaumont"], w(k, 12.0), T.end(k), every=1.8, flight=2.4, height=170, size=1.1))
     T.add(Barrage([(49.225, 5.395), (49.228, 5.470), (49.205, 5.475), (49.205, 5.400)], w(k, 5.0), w("douaumont_zurueck", 6.0), rate=26,
                   seed=17, size=0.8))
+    T.add(Burning([(49.226, 5.398), (49.228, 5.468), (49.208, 5.472), (49.207, 5.402)], w(k, 5.5), T.end("douaumont_zurueck") + 10.0, n=30, ramp=14.0,
+                  seed=59))
     T.cam(w(k, 14.0), Cam(49.205, 5.420, 12, 50, 20))
     T.add(Caption([([FR], "Treffer durchschlagen die Betondecke von Douaumont")], w(k, 16.6), T.end(k) + 0.8, pos="br", width=640))
 
@@ -721,6 +818,7 @@ def build():
     l0 = shift(G.FRONTS["nov02"][7:16], 0.004)
     l1 = shift(G.FRONTS["dec18"][7:16], 0.005)
     T.add(Barrage(line_keys=[(w(k, 3.0), l0), (w(k, 9.6), l1)], t0=w(k, 3.0), t1=w(k, 10.0), rate=34, seed=21, size=0.8))
+    T.add(Burning([(49.262, 5.380), (49.262, 5.490), (49.235, 5.495), (49.232, 5.385)], w(k, 3.5), T.end(k) + 6.0, n=26, ramp=7.0, seed=61))
     front.states.append((w(k, 5.6), w(k, 10.4), E.resample(G.FRONTS["dec18"], 240)))
     units = [U("fr", 8000, [(w(k, 2.0), la - 0.004, lo), (w(k, 3.0), la - 0.004, lo), (w(k, 10.0), la2 - 0.004, lo2)], facing=10, area=45,
                aspect=4.0, losses=[(w(k, 8.0), 900)], fire=[(w(k, 4.0), w(k, 12.0))], t1=w(k, 19.0), seed=131 + i)
@@ -798,6 +896,44 @@ def build():
     T.add(Caption([([FR], "François Mitterrand, Präsident Frankreichs"), (["de"], "Helmut Kohl, deutscher Bundeskanzler")], w(k, 6.8), w(k, 16.0),
                   pos="br", width=600, title="Hand in Hand"))
     T.cam(T.end(k) + 2.0, Cam(49.200, 5.420, 9, 52, 40), "linear")
+    # Flaggen-Gebiete: 1914 Bündniskarte, ab der Westfront deutsch/französisch gehaltenes Gebiet
+    import skia as _sk
+    paths = E.load_countries()
+    thrace = E.thrace_path()
+    bg_path = _sk.Op(paths["Bulgaria"], thrace, _sk.PathOp.kDifference_PathOp) or paths["Bulgaria"]
+    ru_rect, ot_rect, gb_rect = (44.0, 20.0, 60.0, 60.0), (33.0, 27.0, 43.6, 46.0), (49.9, -10.6, 58.7, 1.8)
+    cp_on, en_on = w("europa", 6.8), w("europa", 16.2)
+    war = w("westfront", 9.4)
+    f_end = T.end("bilanz") + 1.5
+    ent = [dict(name="German Empire", flag="de1871", side="cp", t_on=cp_on, t_off=war),
+           dict(name="Austro-Hungarian Empire", flag="ah1869", side="cp", t_on=cp_on, t_off=f_end),
+           dict(name="Ottoman Empire", flag="tr", side="cp", rect=ot_rect, t_on=w("europa", 12.1), t_off=f_end),
+           dict(name="thrace", path=thrace, flag="tr", side="cp", rect=ot_rect, t_on=w("europa", 12.1), t_off=f_end),
+           dict(name="bulgaria", path=bg_path, flag="bg", side="cp", t_on=w("europa", 13.5), t_off=f_end),
+           dict(name="France", flag="fr", side="en", t_on=en_on, t_off=war),
+           dict(name="Belgium", flag="be", side="en", t_on=en_on, t_off=war),
+           dict(name="United Kingdom of Great Britain and Ireland", flag="gb", side="en", rect=gb_rect, t_on=en_on, t_off=f_end),
+           dict(name="Russian Empire", flag="ru1914", side="en", rect=ru_rect, t_on=en_on, t_off=f_end),
+           dict(name="Grand Duchy of Finland", flag="ru1914", side="en", rect=ru_rect, t_on=en_on, t_off=f_end),
+           dict(name="Serbia", flag="rs", side="en", t_on=en_on, t_off=T.vstart["falkenhayn"]),
+           dict(name="Montenegro", flag="me", side="en", t_on=en_on, t_off=T.vstart["falkenhayn"]),
+           dict(name="Kingdom of Italy", flag="it1861", side="en", t_on=w("westfront", 16.2), t_off=f_end),
+           dict(name="de_held", flag="de1871", side="cp", t_on=war, t_off=f_end),
+           dict(name="fr_held", flag="fr", side="en", t_on=war, t_off=f_end)]
+    for nm in ("Georgia", "Armenia", "Azerbaijan"):
+        if nm in paths:
+            ent.append(dict(name=nm, flag="ru1914", side="en", rect=ru_rect, t_on=en_on, t_off=f_end))
+    flags_obj.entries = ent
+    flags_obj.t1 = f_end + 1.5
+
+    # Truppen: alle Verbände bleiben stehen (bis Ende der Schlacht) und rücken mit der Front mit
+    t_troops_end = T.end("bilanz") + 1.0
+    for u in ALL_UNITS:
+        if getattr(u, "persist", False):
+            u.t1 = t_troops_end
+    follow_front(ALL_UNITS, front)
+    T.add(E.Troops(ALL_UNITS, min(u.t0 for u in ALL_UNITS), t_troops_end, ALL_ENEM))
+
     t = T.t
     T.add(Credits(t, t + 27.0, roles=[("Produzent", "Atakan Zengin"), ("Kanal", "WarAZ")], title="VERDUN 1916"))
     T.wait(27.0)
