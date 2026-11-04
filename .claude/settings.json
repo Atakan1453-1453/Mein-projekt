@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__higgsfield__sandbox_exec",
+      "mcp__higgsfield__media_upload",
+      "mcp__higgsfield__media_confirm",
+      "mcp__higgsfield__jobs_wait",
+      "mcp__higgsfield__show_generation_by_ids",
+      "mcp__higgsfield__balance"
+    ]
+  }
+}
