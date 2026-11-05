@@ -252,7 +252,7 @@ def build():
         ALL_ENEM.extend((base + i, base + j) for i, j in enemies)
 
     # Frontverlauf (Linie erscheint ab dem Frontbogen; Flaggen-Gebiete nutzen ihn schon vorher)
-    front = T.add(FrontMap([(0, 0, G.FRONTS["feb21"])], G.WEST, G.SOUTH, G.GER_CLOSE, G.FR_CLOSE, 1e9, 1e9, strength=0.0))
+    front = T.add(FrontMap([(0, 0, G.FRONTS["feb21"])], G.WEST, G.SOUTH, G.GER_CLOSE, G.FR_CLOSE, 1e9, 1e9))
 
     # ------------------------------------------------------------ 0 · Luftaufnahme & Titel
     T.mood(0, "intro")
@@ -372,7 +372,7 @@ def build():
     T.cam(s - 0.3, Cam(49.02, 5.42, 95, 30, 0))
     front.t0, front.t1 = s + 0.5, 1e9
     T.add(Label(49.10, 5.47, "Frontbogen von Verdun", t0=w("frontbogen", 1.2), t1=w("frontbogen", 10.0), size=26, dot=False, align="center", dx=0))
-    T.add(Caption([([DE], "deutsch besetzt"), ([FR], "französisch")], w("frontbogen", 5.3), w("frontbogen", 14.5), pos="br", width=360))
+    T.add(Caption([([DE], "rot: deutsch besetzt"), ([FR], "blau: französisch")], w("frontbogen", 5.3), w("frontbogen", 14.5), pos="br", width=380))
     rail_sm = [(49.160, 5.384), (49.120, 5.410), (49.060, 5.460), (48.990, 5.505), (48.890, 5.545), (48.770, 5.590)]
     rail_cm = [(49.160, 5.384), (49.150, 5.300), (49.140, 5.170), (49.125, 5.080), (49.093, 4.900)]
     T.add(Polyline(rail_sm, E.hexc("#e8e4d8"), t0=w("frontbogen", 10.4), t1=w("frontbogen", 22.0), width=3, grow=1.2, dash=(10, 6)))

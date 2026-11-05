@@ -1857,6 +1857,14 @@ class FrontMap(Obj):
         self.w, self.h, self.A = merc_affine(*box, res)
         self.res = res
         self._cache = (None, None)
+        # weicher Rand der Einfärbung (kein sichtbares Rechteck beim Rauszoomen)
+        yy = np.minimum(np.arange(self.h), np.arange(self.h)[::-1])[:, None] / (0.22 * self.h)
+        xx = np.minimum(np.arange(self.w), np.arange(self.w)[::-1])[None, :] / (0.22 * self.w)
+        m = np.clip(np.minimum(yy, xx), 0, 1)
+        m = (m * m * (3 - 2 * m) * 255).astype(np.uint8)
+        mask = np.zeros((self.h, self.w, 4), np.uint8)
+        mask[..., 3] = m
+        self._mask = skia.Image.fromarray(mask, colorType=skia.kRGBA_8888_ColorType, alphaType=skia.kUnpremul_AlphaType)
 
     def middle(self, t):
         cur = self.states[0][2]
@@ -1892,18 +1900,22 @@ class FrontMap(Obj):
             return p
         c.drawPath(path(np.concatenate([full, self.ger_close])), paint(skia.Color4f(0.93, 0.13, 0.12, 1)))
         c.drawPath(path(np.concatenate([full, self.fr_close])), paint(skia.Color4f(0.18, 0.50, 1.0, 1)))
+        mp = skia.Paint()
+        mp.setBlendMode(skia.BlendMode.kDstIn)
+        c.drawImage(self._mask, 0, 0, skia.SamplingOptions(), mp)
         return surf.makeImageSnapshot().withDefaultMipmaps()
 
     def draw(self, c, v, t):
-        a = self.alpha(t)
-        if a <= 0 or v.cam.width > 420:
+        a = self.alpha(t) * clamp((440 - v.cam.width) / 60)
+        if a <= 0:
             return
         full, key = self.line_at(t)
-        if self.strength > 0:
+        ta = self.strength * a * clamp((240 - v.cam.width) / 100)
+        if ta > 0.002:
             if self._cache[0] != key:
                 self._cache = (key, self._raster(full))
             p = skia.Paint()
-            p.setAlphaf(self.strength * a)
+            p.setAlphaf(ta)
             draw_merc_image(c, v, self._cache[1], self.A, p)
         if self.line:
             for run in screen_runs(v, full):
@@ -2409,7 +2421,7 @@ class TerritoryFlags(Obj):
     """
     z = 4
 
-    def __init__(self, entries, t0, t1, front=None, wf_n=None, wf_s=None, alpha_local=0.15, alpha_map=0.88, borders=True):
+    def __init__(self, entries, t0, t1, front=None, wf_n=None, wf_s=None, alpha_local=0.0, alpha_map=0.88, borders=True):
         self.entries, self.t0, self.t1, self.front = entries, t0, t1, front
         self.wf_n, self.wf_s = np.array(wf_n) if wf_n is not None else None, np.array(wf_s) if wf_s is not None else None
         self.alpha_local, self.alpha_map, self.borders = alpha_local, alpha_map, borders
@@ -2439,7 +2451,7 @@ class TerritoryFlags(Obj):
         return de, frh
 
     def zoom_alpha(self, v):
-        k = smooth((math.log(max(v.cam.width, 1)) - math.log(240)) / (math.log(1500) - math.log(240)))
+        k = smooth((math.log(max(v.cam.width, 1)) - math.log(560)) / (math.log(900) - math.log(560)))
         return self.alpha_local + (self.alpha_map - self.alpha_local) * k, k
 
     def draw(self, c, v, t):
@@ -2447,6 +2459,8 @@ class TerritoryFlags(Obj):
         if a <= 0:
             return
         za, k = self.zoom_alpha(v)
+        if za <= 0.003 and not (self.borders and v.cam.width > 250):
+            return
         # sichtbarer Boden (vor der Kamera) als Viereck in Mercator
         quad = skia.Path()
         for i, (sx, sy) in enumerate(((-0.2 * W, -0.15 * H), (1.2 * W, -0.15 * H), (1.2 * W, 1.2 * H), (-0.2 * W, 1.2 * H))):
@@ -2502,7 +2516,7 @@ class TerritoryFlags(Obj):
                 f = smooth((kk - 1.4) / 2.2)
                 target = skia.Rect.MakeLTRB(full.left() + (vis.left() - full.left()) * f, full.top() + (vis.top() - full.top()) * f,
                                             full.right() + (vis.right() - full.right()) * f, full.bottom() + (vis.bottom() - full.bottom()) * f)
-            if e.get("flag"):
+            if e.get("flag") and za * ea > 0.003:
                 img = flag_texture(e["flag"])
                 p = skia.Paint(AntiAlias=True)
                 p.setAlphaf(clamp(za * ea))
