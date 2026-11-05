@@ -4,8 +4,8 @@ Animierte Karten-Dokumentation auf Deutsch über die Schlacht um Verdun (21. Feb
 im gleichen Stil und Ablauf wie das Çanakkale-Video in `../canakkale`. Das Video beginnt mit einer Luftaufnahme
 über Verdun und fliegt zu jedem Ereignis. Truppen erscheinen als Flaggen-Marker mit Zahlen (Deutsches Kaiserreich
 Schwarz-Weiß-Rot, Frankreich Trikolore) und als Figuren (1 Figur = 1 Soldat: deutsch rot, französisch blau), die im
-Gefecht fallen. Der Frontverlauf wird über das ganze Jahr animiert. Hinter der Linie liegt auf jeder Seite hauchdünn die
-Flagge des Landes (deutsch gehaltenes Gebiet Schwarz-Weiß-Rot, französisches Trikolore), in der Übersichtskarte kräftig.
+Gefecht fallen. Der Frontverlauf wird über das ganze Jahr animiert, deutsch gehaltenes Gebiet ist ganz leicht rot,
+französisches ganz leicht blau eingefärbt. Auf den Übersichtskarten sind die Länder mit ihren Flaggen gefüllt.
 Alle Verbände bleiben an der Front stehen und rücken mit ihr mit; Gefallene verblassen nach einigen Sekunden.
 Wo die Granaten einschlagen, brennen die Wälder. Die Wälder verwandeln sich nach und nach in eine Trichterwüste.
 Die Kamera zoomt nahtlos von der Nahansicht bis zur Europakarte (Satellit → ESA WorldCover in Naturfarben).
