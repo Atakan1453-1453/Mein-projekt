@@ -354,12 +354,18 @@ def build(known=None):
     T.add(GasCloud([(49.885, 2.505), (49.885, 2.535), (49.855, 2.540), (49.852, 2.505)], w(k, 14.8), w(k, 26.0), n=30))
     a7v = tanks(A.TankGroup("de", "a7v", 13, [(w(k, 8.0), 49.872, 2.565), (w(k, 21.0), 49.868, 2.520), (w(k, 27.0), 49.862, 2.505)],
                             spacing=160, seed=31, fire=[(w(k, 14.0), w(k, 27.0))], t1=T.end("panzerduell") - 1.0))
-    ger = [U("de", 2600, [(w(k, 9.0), 49.874, 2.572), (w(k, 21.5), 49.868, 2.522)], facing=268, area=40, aspect=3.0,
-             losses=[(w(k, 17.0), 300)], fire=[(w(k, 15.0), w(k, 22.0))], seed=301),
-           U("de", 2200, [(w(k, 9.4), 49.858, 2.568), (w(k, 21.8), 49.856, 2.520)], facing=272, area=40, aspect=3.0,
-             losses=[(w(k, 17.4), 250)], fire=[(w(k, 15.0), w(k, 22.0))], seed=302)]
+    # nach dem australischen Gegenangriff (Nacht zum 25. April): Verluste und Rückzug nach Osten
+    ger = [U("de", 2600, [(w(k, 9.0), 49.874, 2.572), (w(k, 21.5), 49.868, 2.522), (w("anzac", 8.0), 49.868, 2.522),
+                          (w("anzac", 12.5), 49.874, 2.566)], facing=268, area=40, aspect=3.0,
+             losses=[(w(k, 17.0), 300), (w("anzac", 8.5), 900)], fire=[(w(k, 15.0), w(k, 22.0)), (w("anzac", 7.0), w("anzac", 11.0))],
+             seed=301),
+           U("de", 2200, [(w(k, 9.4), 49.858, 2.568), (w(k, 21.8), 49.856, 2.520), (w("anzac", 8.2), 49.856, 2.520),
+                          (w("anzac", 12.7), 49.860, 2.566)], facing=272, area=40, aspect=3.0,
+             losses=[(w(k, 17.4), 250), (w("anzac", 8.7), 800)], fire=[(w(k, 15.0), w(k, 22.0)), (w("anzac", 7.0), w("anzac", 11.0))],
+             seed=302)]
     brit = [U("gb", 2200, [(s, 49.870, 2.538), (w(k, 19.6), 49.870, 2.538), (w(k, 23.0), 49.866, 2.500)], facing=88, area=40,
               aspect=3.0, losses=[(w(k, 16.5), 500)], fire=[(w(k, 15.0), w(k, 22.0))], seed=303)]
+    vb_ger_idx = len(ALL_UNITS)
     troops(ger + brit, T.end("anzac") - 2.0, [(0, 2), (1, 2)])
     front.states.append((w(k, 19.6), w(k, 23.0), local_line("apr24")))
     T.add(Token(49.880, 2.560, [DE], [(0, 13)], label="A7V", side="de", unit=" Panzer", t0=w(k, 8.6), t1=w(k, 26.0), dy=-60))
@@ -396,6 +402,7 @@ def build(known=None):
     T.add(Arrow([(49.842, 2.470), (49.846, 2.522), (49.858, 2.552)], "al", t0=w(k, 9.2), grow=2.4, t1=w(k, 18.0), width=12))
     T.add(Token(49.895, 2.46, [AU], [(0, 0)], label="13. und 15. Brigade", side="al", t0=w(k, 3.0), t1=w(k, 16.0), dy=-50))
     troops(aus, T.end(k) + 1.0, [])
+    ALL_ENEM.extend([(len(ALL_UNITS) - 2, vb_ger_idx), (len(ALL_UNITS) - 1, vb_ger_idx + 1)])
     front.states.append((w(k, 10.0), w(k, 13.5), local_line("apr04")))
     T.add(Caption([([AU], "Anzac Day, 25. April 1918"), (None, "drei Jahre nach der Landung bei Gallipoli")], w(k, 15.0),
                   w(k, 21.5), pos="br", width=580))
