@@ -255,8 +255,8 @@ class Tanks(Obj):
     """Zeichnet Panzergruppen (1 Modell = 1 Panzer)."""
     z = 19
 
-    def __init__(self, groups, t0, t1, max_width=60.0):
-        self.groups, self.t0, self.t1, self.max_width = groups, t0, t1, max_width
+    def __init__(self, groups, t0, t1, max_width=60.0, size=1.0):
+        self.groups, self.t0, self.t1, self.max_width, self.size = groups, t0, t1, max_width, size
         self.fin, self.fout = 0.8, 1.0
 
     def draw(self, c, v, t):
@@ -270,7 +270,7 @@ class Tanks(Obj):
                 continue
             ga = a * fade(t, g.t0, g.t1, 0.8, 1.0)
             L, B = TANK_DIM[g.kind]
-            Lpx = clamp(L / gm * 3.4, 6.0, 30.0)
+            Lpx = clamp(L / gm * 8.0, 12.0, 46.0) * self.size
             sc = Lpx * gm / L                                   # Vergrößerung gegenüber Echtmaß
             X, Y, hd, moving, la = g.state(t)
             km = 1.0 / np.cos(np.radians(la))
@@ -281,32 +281,7 @@ class Tanks(Obj):
             vis = ok & (sx > -60) & (sx < W + 60) & (sy > -60) & (sy < H + 60)
             if not vis.any():
                 continue
-            # Kettenspuren (letzte Sekunden) und Staub
-            for i in np.nonzero(vis & moving)[0]:
-                pass
             idx = np.nonzero(vis)[0]
-            trail_t = np.array([0.0, 1.5, 3.0, 4.5, 6.0])
-            if (moving[idx]).any():
-                tp = c
-                path = skia.Path()
-                for i in idx[moving[idx]]:
-                    te = min(t - g.lag[i], g.halt[i])
-                    pts = []
-                    for dt in trail_t:
-                        lam, lom = g.center(np.array([te - dt]))
-                        hh = math.radians(g.heading_at(te - dt))
-                        cx, cy = _merc_arr(lam[0], lom[0])
-                        kk = 1.0 / math.cos(math.radians(lam[0]))
-                        ox, oy = g.off[i]
-                        pts.append((cx + (ox * math.cos(hh) + oy * math.sin(hh)) * kk, cy + (-ox * math.sin(hh) + oy * math.cos(hh)) * kk))
-                    P = np.array(pts)
-                    px, py, _, pok = _proj(v, P[:, 0], P[:, 1])
-                    if not pok.all():
-                        continue
-                    path.moveTo(px[0], py[0])
-                    for xx, yy in zip(px[1:], py[1:]):
-                        path.lineTo(xx, yy)
-                c.drawPath(path, E.paint(skia.Color4f(0.20, 0.16, 0.11, 0.30 * ga), "stroke", max(1.0, Lpx * 0.22)))
             frame = int(t * 8) % 3
             for i in idx:
                 cxs = [X[i] + (fx[i] * hl[i] * s1 + rx[i] * hb[i] * s2) for s1, s2 in ((1, -1), (1, 1), (-1, 1), (-1, -1))]
@@ -317,9 +292,18 @@ class Tanks(Obj):
                 wreck = t >= g.ko[i]
                 halted = t >= g.stop[i]
                 if moving[i]:
+                    # Kettenspuren: zwei kurze Linien hinter dem Panzer
+                    dxs, dys = (qx[0] + qx[1] - qx[2] - qx[3]) / 2, (qy[0] + qy[1] - qy[2] - qy[3]) / 2
+                    for kk in (2, 3):
+                        x0, y0 = qx[kk] + (qx[5 - kk] - qx[kk]) * 0.18, qy[kk] + (qy[5 - kk] - qy[kk]) * 0.18
+                        sh_ = skia.GradientShader.MakeLinear([skia.Point(x0, y0), skia.Point(x0 - dxs * 2.2, y0 - dys * 2.2)],
+                                                             [skia.Color4f(0.18, 0.14, 0.10, 0.45 * ga).toColor(),
+                                                              skia.Color4f(0.18, 0.14, 0.10, 0.0).toColor()])
+                        tp = skia.Paint(AntiAlias=True, Shader=sh_, Style=skia.Paint.kStroke_Style, StrokeWidth=max(1.0, Lpx * 0.13))
+                        c.drawLine(x0, y0, x0 - dxs * 2.2, y0 - dys * 2.2, tp)
                     # Staub hinter dem Panzer
                     bx, by = (qx[2] + qx[3]) / 2, (qy[2] + qy[3]) / 2
-                    soft_circle(c, bx, by, Lpx * 0.9, skia.Color4f(0.55, 0.47, 0.36, 0.22 * ga))
+                    soft_circle(c, bx, by, Lpx * 0.7, skia.Color4f(0.50, 0.42, 0.32, 0.20 * ga))
                 img = tank_sprite(g.kind, g.nation, 0 if (wreck or halted or not moving[i]) else (frame + int(g.wob[i] * 3)) % 3, wreck)
                 # Schatten
                 sh = skia.Paint(AntiAlias=True)
@@ -329,11 +313,11 @@ class Tanks(Obj):
                 _quad_draw(c, img, list(zip(qx, qy)), ga)
                 if wreck:
                     wrecks.append((sx[i], sy[i], Lpx, t - g.ko[i], ga, g.wob[i]))
-                elif any(ta <= t <= tb for ta, tb in g.fire) and ((int(t * 10) + i * 7) % 23 == 0):
+                elif any(ta <= t <= tb for ta, tb in g.fire) and ((int(t * 6) + i * 7) % 37 == 0):
                     mx, my = (qx[0] + qx[1]) / 2, (qy[0] + qy[1]) / 2
-                    soft_circle(c, mx, my, Lpx * 0.6, skia.Color4f(1, 0.85, 0.45, 0.85 * ga), skia.BlendMode.kPlus)
-                    ex, ey = mx + (mx - sx[i]) * 6, my + (my - sy[i]) * 6
-                    c.drawLine(mx, my, ex, ey, E.paint(skia.Color4f(1, 0.9, 0.5, 0.55 * ga), "stroke", 1.2))
+                    soft_circle(c, mx, my, Lpx * 0.35, skia.Color4f(1, 0.85, 0.45, 0.8 * ga), skia.BlendMode.kPlus)
+                    ex, ey = mx + (mx - sx[i]) * 3, my + (my - sy[i]) * 3
+                    c.drawLine(mx, my, ex, ey, E.paint(skia.Color4f(1, 0.9, 0.5, 0.45 * ga), "stroke", 1.0))
         for x, y, Lpx, age, ga, ph in wrecks:
             fa = ga * (1 - smooth((age - 40) / 20))
             if fa <= 0.02:
@@ -417,10 +401,17 @@ def _plane_sprite(kind, nation):
 _PLANE_CACHE = {}
 
 
-def plane_sprite(kind, nation):
-    key = (kind, nation)
+def plane_sprite(kind, nation, shadow=False):
+    key = (kind, nation, shadow)
     if key not in _PLANE_CACHE:
-        _PLANE_CACHE[key] = _plane_sprite(kind, nation)
+        if shadow:
+            arr = plane_sprite(kind, nation).toarray(colorType=skia.kRGBA_8888_ColorType, alphaType=skia.kUnpremul_AlphaType).copy()
+            al = ndimage.gaussian_filter(arr[..., 3].astype(np.float32), 3.0)
+            arr[..., :3] = 0
+            arr[..., 3] = np.clip(al, 0, 255).astype(np.uint8)
+            _PLANE_CACHE[key] = _img(arr)
+        else:
+            _PLANE_CACHE[key] = _plane_sprite(kind, nation)
     return _PLANE_CACHE[key]
 
 
@@ -522,7 +513,7 @@ class AirWar(Obj):
             if not (-200 < x < W + 200 and -200 < y < H + 200):
                 continue
             span = PLANE_DIM[pl.kind]
-            px = clamp(span / gm * 2.6 * ds, 10.0, 44.0) * self.size * (1 + alt / max(1.0, v.cam.width * 1000.0) * 0.8)
+            px = clamp(span / gm * 8.0 * ds, 26.0, 66.0) * self.size * (1 + alt / max(1.0, v.cam.width * 1000.0) * 0.8)
             # Bildschirm-Richtung aus einem Punkt vor dem Flugzeug
             k = math.cos(math.radians(la))
             ahead = v.proj(la + math.cos(math.radians(hd)) * 0.002, lo + math.sin(math.radians(hd)) * 0.002 / k)
@@ -552,15 +543,13 @@ class AirWar(Obj):
             # Schatten am Boden
             img = plane_sprite(pl.kind, pl.nation)
             shp = skia.Paint(AntiAlias=True)
-            shp.setColorFilter(skia.ColorFilters.Blend(skia.Color4f(0, 0, 0, 1).toColor(), skia.BlendMode.kSrcIn))
-            shp.setImageFilter(skia.ImageFilters.Blur(2.0, 2.0))
             spx = px * 0.85
             c.save()
             c.translate(gx, gy)
             c.rotate(ang)
             c.scale(1.0, 0.8)
             shp.setAlphaf(0.30 * pa)
-            c.drawImageRect(img, skia.Rect.MakeXYWH(-spx / 2, -spx / 2, spx, spx), E.SAMPLING, shp)
+            c.drawImageRect(plane_sprite(pl.kind, pl.nation, True), skia.Rect.MakeXYWH(-spx / 2, -spx / 2, spx, spx), E.SAMPLING, shp)
             c.restore()
             # Flugzeug
             c.save()
@@ -650,9 +639,9 @@ def _cloud_texture(seed, w=384, h=256):
         bx, by = rng.uniform(0.25, 0.75) * w, rng.uniform(0.35, 0.65) * h
         br = rng.uniform(0.12, 0.26) * w
         base = np.maximum(base, np.exp(-(((xx - bx) / br) ** 2 + ((yy - by) / (br * 0.75)) ** 2)))
-    d = base * 1.25 + n * 0.22 - 0.45
-    alpha = np.clip(d * 2.2, 0, 1)
-    alpha = ndimage.gaussian_filter(alpha, 2.0)
+    d = base * 1.2 + n * 0.26 - 0.42
+    alpha = np.clip(d * 1.6, 0, 1) ** 1.3
+    alpha = ndimage.gaussian_filter(alpha, 4.0)
     # Licht von oben links, Unterseite etwas grauer
     gy, gx = np.gradient(ndimage.gaussian_filter(d, 6))
     lit = np.clip(0.88 + (gy * -2.5 + gx * -1.5) * 8, 0.72, 1.0)

@@ -37,30 +37,37 @@ def chord(name, octave=3):
     return [base, base + (3 if minor else 4), base + 7]
 
 
-HICAZ = [62, 63, 66, 67, 69, 70, 72, 74]          # D Eb F# G A Bb C D
-DMINOR = [62, 64, 65, 67, 69, 70, 72, 74]
-
+# ---------------------------------------------------------------- Amiens 1918: eigene Musik (e-Moll, Leitmotiv)
+#            bpm  Akkordfolge                                          Intensität  Stil        Takt
 MOODS = {
-    #            bpm  progression                                 intensity  melody
-    "intro":    (60, ["Dm", "Bb", "Gm", "A", "Dm", "Eb", "Dm", "A"], 0.35, "cello"),
-    "world":    (76, ["Dm", "C", "Bb", "A"], 0.55, "horn"),
-    "fortress": (66, ["Dm", "Eb", "Dm", "C", "Bb", "Eb", "A", "A"], 0.45, "horn"),
-    "barrage":  (92, ["Dm", "Bb", "C", "A", "Dm", "Eb", "Gm", "A"], 1.0, "brass"),
-    "forts":    (88, ["Dm", "Bb", "Gm", "A", "Dm", "Eb", "Bb", "A"], 0.9, "brass"),
-    "counter":  (96, ["Dm", "F", "C", "Bb", "Gm", "Bb", "C", "A"], 0.95, "horn"),
-    "naval":    (96, ["Dm", "Bb", "C", "A", "Dm", "Bb", "Gm", "A"], 0.95, "brass"),
-    "prepare":  (80, ["Gm", "Dm", "Eb", "A"], 0.55, "horn"),
-    "landing":  (100, ["Dm", "Bb", "C", "A", "Gm", "Bb", "Eb", "A"], 1.0, "brass"),
-    "trench":   (64, ["Dm", "Gm", "Bb", "A", "Dm", "F", "Gm", "A"], 0.5, "cello"),
-    "august":   (96, ["Dm", "C", "Bb", "A", "Gm", "Eb", "Bb", "A"], 0.95, "brass"),
-    "winter":   (58, ["Dm", "Bb", "F", "A", "Dm", "Gm", "Eb", "A"], 0.3, "strings"),
-    "legacy":   (64, ["Dm", "Bb", "F", "C", "Gm", "Bb", "Eb", "A"], 0.55, "strings"),
-    "legacy2":  (62, ["Bb", "F", "Gm", "Eb", "Bb", "F", "C", "D"], 0.6, "hymn"),
+    "intro":     (64, ["Em", "C", "G", "D", "Em", "Am", "B", "B"], 0.35, "cello", 4),
+    "world":     (84, ["Em", "D", "C", "B", "Em", "D", "C", "B"], 0.55, "march", 4),
+    "offensive": (104, ["Em", "Em", "C", "D", "Em", "Am", "B", "B"], 0.95, "fanfare", 4),
+    "air":       (72, ["G", "D", "Em", "C", "G", "Bm", "C", "D"], 0.6, "soar", 3),
+    "steel":     (96, ["Em", "F", "Em", "D", "Em", "C", "B", "B"], 0.85, "ostinato", 4),
+    "plan":      (88, ["Am", "Em", "F", "E", "Am", "Dm", "E", "E"], 0.5, "clock", 4),
+    "battle":    (112, ["Em", "C", "D", "B", "Em", "G", "Am", "B"], 1.0, "fanfare", 4),
+    "after":     (66, ["Am", "F", "C", "G", "Am", "F", "E", "E"], 0.45, "cello", 4),
+    "hundred":   (92, ["C", "G", "Am", "Em", "F", "C", "Dm", "G"], 0.75, "march", 4),
+    "legacy":    (60, ["G", "D", "Em", "C", "G", "D", "C", "G"], 0.5, "hymn", 4),
 }
+TONIC = {"intro": ("E", "min"), "world": ("E", "min"), "offensive": ("E", "min"), "air": ("G", "maj"), "steel": ("E", "min"),
+         "plan": ("A", "min"), "battle": ("E", "min"), "after": ("A", "min"), "hundred": ("C", "maj"), "legacy": ("G", "maj")}
+# Leitmotiv (Tonleiterstufen, Dauer in Schlägen): E – H – A – G – E – Dis – E, Antwort G A H C H A Fis
+THEME_A = [(0, 1.5), (4, 0.5), (3, 1), (2, 1), (0, 2), (-1, 1), (0, 1)]
+THEME_B = [(2, 1), (3, 1), (4, 1.5), (5, 0.5), (4, 1), (3, 1), (1, 2)]
+SCALES = {"min": [0, 2, 3, 5, 7, 8, 11], "maj": [0, 2, 4, 5, 7, 9, 11]}
+
+
+def degree(tonic, mode, d, octave=4):
+    iv = SCALES[mode]
+    base = 12 * (octave + 1) + NOTE[tonic]
+    return base + 12 * (d // 7) + iv[d % 7]
+
 
 # GM-Programme
-P_STR, P_BASS, P_CELLO, P_TIMP, P_HORN, P_TBN, P_CHOIR, P_HARP, P_NEY, P_TAIKO, P_STRTREM = 48, 43, 42, 47, 60, 57, 52, 46, 68, 116, 44
-
+P_STR, P_BASS, P_CELLO, P_TIMP, P_HORN, P_TBN, P_CHOIR, P_HARP, P_TPT, P_FLUTE, P_TUBA, P_PIZZ, P_CLAR, P_STRTREM = (
+    48, 43, 42, 47, 60, 57, 52, 46, 56, 73, 58, 45, 71, 44)
 
 class Song:
     def __init__(self, bpm):
@@ -101,121 +108,150 @@ class Song:
         self.mid.save(path)
 
 
-def compose(mood, seconds, seed):
-    bpm, prog, inten, mel = MOODS[mood]
+def compose(mood, seconds, seed, last=False):
+    bpm, prog, inten, style, meter = MOODS[mood]
+    tonic, mode = TONIC[mood]
     rnd = random.Random(seed)
     s = Song(bpm)
     beats_total = seconds * bpm / 60.0
-    bars = int(math.ceil(beats_total / 4)) + 2
+    bars = int(math.ceil(beats_total / meter)) + 2
     s.prog(0, P_STR, 100, 64)
     s.prog(1, P_BASS, 96, 54)
     s.prog(2, P_CELLO, 92, 50)
-    s.prog(3, P_TIMP, 110, 64)
-    s.prog(4, P_HORN, 92, 74)
-    s.prog(5, P_CHOIR, 80, 64)
-    s.prog(6, P_HARP, 80, 84)
-    s.prog(7, P_NEY, 104, 70)
+    s.prog(3, P_TIMP, 108, 64)
+    s.prog(4, P_HORN, 94, 74)
+    s.prog(5, P_CHOIR, 78, 64)
+    s.prog(6, P_CLAR if style == "clock" else P_HARP, 84, 84)
     s.prog(8, P_TBN, 92, 44)
-    s.prog(10, P_TAIKO, 100, 64)
-    s.prog(11, P_STRTREM, 82, 60)
-    scale = HICAZ if mel in ("ney",) else DMINOR
+    s.prog(11, P_STRTREM, 80, 60)
+    s.prog(12, P_TPT, 96, 70)
+    s.prog(13, P_FLUTE, 92, 80)
+    s.prog(14, P_TUBA, 96, 50)
+    s.prog(15, P_PIZZ, 96, 40)
+    mel_oct = {"cello": 2, "soar": 5, "fanfare": 4, "march": 4, "hymn": 4, "ostinato": 4, "clock": 4}[style]
+    k3 = meter / 4.0
     for b in range(bars):
         name = prog[b % len(prog)]
         ch3 = chord(name, 3)
-        beat0 = b * 4
-        # Dynamik-Bogen: leiser Beginn, Steigerung, sanftes Ende
+        beat0 = b * meter
         pos = b / max(1, bars - 1)
-        arc = 0.65 + 0.35 * math.sin(math.pi * min(1, pos * 1.15))
-        v = (40 + 60 * inten) * arc
-        # Streicher-Akkord (gehalten), Bass
-        for p in ch3:
-            s.note(0, beat0, 4, p + 12, v * 0.8)
-        s.note(0, beat0, 4, ch3[0] + 24, v * 0.6)
-        s.note(1, beat0, 4, ch3[0] - 12, v * 0.9)
-        # Chor in ruhigen Stimmungen und an Höhepunkten
-        if mood in ("intro", "winter", "legacy", "legacy2", "fortress") or (inten > 0.9 and b % 8 >= 4):
-            for p in ch3:
-                s.note(5, beat0, 4, p + 12, v * 0.55)
-        # Ostinato bei treibenden Stimmungen
-        if inten >= 0.5:
-            n_sub = 8 if inten > 0.8 else 4
-            for k in range(n_sub):
-                pitch = ch3[0] + (12 if k % 2 else 0) + (7 if k % 4 == 3 else 0)
-                s.note(2, beat0 + k * 4 / n_sub, 4 / n_sub, pitch, v * (0.75 + 0.2 * (k % 2 == 0)))
+        arc = 0.62 + 0.38 * math.sin(math.pi * min(1, pos * 1.1))
+        v = (40 + 62 * inten) * arc
+        # Streicher-Fläche und Bass
+        if style == "soar":
+            arp = [ch3[0] + 12, ch3[1] + 12, ch3[2] + 12, ch3[1] + 24, ch3[2] + 12, ch3[1] + 12]
+            for kk in range(6):
+                s.note(0, beat0 + kk * 0.5, 0.55, arp[kk], v * 0.55)
+            s.note(1, beat0, meter, ch3[0] - 12, v * 0.7)
         else:
-            s.note(2, beat0, 4, ch3[0], v * 0.7)
-        # Pauken
-        if inten >= 0.9:
-            s.note(3, beat0, 1, ch3[0] - 12 + 12, v * 1.1)
-            s.note(3, beat0 + 2.5, 0.5, ch3[0] - 12 + 12, v * 0.8)
-            if b % 4 == 3:
-                for k in range(8):
-                    s.note(3, beat0 + 2 + k * 0.25, 0.25, ch3[0], v * (0.5 + k * 0.07))
-            s.note(10, beat0, 1, 40, v)
-            s.note(10, beat0 + 1.5, 0.5, 40, v * 0.7)
-            s.note(10, beat0 + 3, 1, 40, v * 0.85)
-        elif inten >= 0.5 and b % 2 == 0:
-            s.note(3, beat0, 2, ch3[0], v * 0.8)
-        elif b % 4 == 0:
-            s.note(3, beat0, 4, ch3[0], v * 0.5)
-        # Militärische Trommel (Kanal 9 = Schlagzeug)
-        if inten >= 0.9:
-            for k in range(8):
-                s.note(9, beat0 + k * 0.5, 0.25, 38, v * (0.55 + 0.25 * (k % 2 == 0)))
+            for p in ch3:
+                s.note(0, beat0, meter, p + 12, v * 0.72)
+            s.note(1, beat0, meter, ch3[0] - 12, v * 0.9)
+        # Stil-Begleitung
+        if style == "march":
+            for kk, (bt, vel) in enumerate(((0, 1.0), (0.75, 0.5), (1, 0.8), (2, 0.9), (2.5, 0.5), (2.75, 0.6), (3, 0.8), (3.5, 0.6))):
+                s.note(9, beat0 + bt, 0.25, 38, v * 0.55 * vel)
+            s.note(9, beat0, 0.5, 36, v * 0.8)
+            s.note(9, beat0 + 2, 0.5, 36, v * 0.7)
             if b % 8 == 0:
-                s.note(9, beat0, 2, 49, v * 0.8)
-        elif mood in ("world", "prepare") and b % 2 == 0:
-            for k in (0, 0.75, 1, 2, 2.75, 3):
-                s.note(9, beat0 + k, 0.25, 38, v * 0.45)
-        # Harfe in ruhigen Stimmungen
-        if mood in ("intro", "fortress", "winter", "legacy", "legacy2", "trench"):
+                s.note(9, beat0, 2, 49, v * 0.7)
+            for kk in range(4):
+                s.note(2, beat0 + kk, 0.9, ch3[0] + (7 if kk % 2 else 0), v * 0.7)
+        elif style == "fanfare":
+            for kk in range(16):
+                s.note(11, beat0 + kk * 0.25, 0.25, ch3[2] + 12 + (12 if kk % 4 == 0 else 0), v * 0.45)
+            for kk in range(8):
+                s.note(2, beat0 + kk * 0.5, 0.5, ch3[0] + (12 if kk % 2 else 0), v * 0.8)
+            s.note(3, beat0, 1, ch3[0], v * 1.05)
+            s.note(3, beat0 + 2.5, 0.5, ch3[0], v * 0.8)
+            if b % 4 == 3:
+                for kk in range(8):
+                    s.note(3, beat0 + 2 + kk * 0.25, 0.25, ch3[0], v * (0.5 + kk * 0.07))
+            for kk in range(8):
+                s.note(9, beat0 + kk * 0.5, 0.25, 38, v * (0.5 + 0.3 * (kk % 2 == 0)))
+            s.note(9, beat0, 1, 36, v * 0.9)
+            s.note(9, beat0 + 2, 1, 36, v * 0.8)
+            if b % 8 == 0:
+                s.note(9, beat0, 2, 57, v * 0.75)
+            if b % 8 >= 4:
+                for p in ch3:
+                    s.note(5, beat0, meter, p + 12, v * 0.5)
+        elif style == "ostinato":
+            pat = [0, 0, 1, 0, 0, 0, -1, 0]
+            for kk, d in enumerate(pat):
+                s.note(14, beat0 + kk * 0.5, 0.45, degree(tonic, "min", d, 1) + (1 if d == 1 else 0), v * (0.85 if kk % 4 == 0 else 0.6))
+                s.note(8, beat0 + kk * 0.5, 0.45, degree(tonic, "min", d, 2) + (1 if d == 1 else 0), v * (0.7 if kk % 4 == 0 else 0.45))
+            s.note(3, beat0, 1, ch3[0], v)
+            s.note(9, beat0 + 1, 0.25, 38, v * 0.5)
+            s.note(9, beat0 + 3, 0.25, 38, v * 0.5)
+            if b % 2 == 1:
+                s.note(11, beat0, meter, ch3[2] + 24, v * 0.5)
+        elif style == "clock":
+            for kk in range(8):
+                s.note(15, beat0 + kk * 0.5, 0.3, (ch3[0] + 12) if kk % 2 == 0 else (ch3[2] + 12), v * 0.75)
+                s.note(9, beat0 + kk * 0.5, 0.1, 76 if kk % 2 == 0 else 77, v * 0.35)
+            if b % 4 == 3:
+                s.note(3, beat0, 4, ch3[0], v * 0.6)
+        elif style == "cello":
             arp = [ch3[0] + 12, ch3[1] + 12, ch3[2] + 12, ch3[0] + 24]
-            for k in range(8):
-                s.note(6, beat0 + k * 0.5, 0.6, arp[k % 4] + (12 if k >= 4 else 0), v * 0.45)
-        # Streichertremolo bei Spannung
-        if mood in ("fortress", "prepare", "naval", "landing", "august", "barrage", "forts", "counter") and b % 2 == 1:
-            s.note(11, beat0, 4, ch3[2] + 24, v * 0.55)
-        # Melodie: Ney / Horn / Blech / Cello
-        if b % 2 == 0 and b >= 2:
-            phrase_len = 8
-            start = beat0
-            cur = rnd.choice([0, 2, 4])
+            for kk in range(8):
+                s.note(6, beat0 + kk * 0.5, 0.6, arp[kk % 4] + (12 if kk >= 4 else 0), v * 0.4)
+            if b % 4 == 0:
+                s.note(3, beat0, 4, ch3[0], v * 0.45)
+        elif style == "hymn":
+            for p in ch3:
+                s.note(5, beat0, meter, p + 12, v * 0.6)
+                s.note(4, beat0, meter, p, v * 0.5)
+            if b % 4 == 3:
+                for kk in range(8):
+                    s.note(3, beat0 + 2 + kk * 0.25, 0.25, ch3[0], v * (0.35 + kk * 0.05))
+        elif style == "soar":
+            if b % 6 == 0:
+                s.note(9, beat0, 3, 52, v * 0.35)
+        # Leitmotiv: A (2 Takte) + B (2 Takte), alle vier Takte, ab Takt 2
+        if b >= 2 and (b - 2) % 4 in (0, 2):
+            phrase = THEME_A if (b - 2) % 8 < 4 and (b - 2) % 4 == 0 else (THEME_B if (b - 2) % 4 == 2 else THEME_A)
+            if (b - 2) % 8 >= 4 and (b - 2) % 4 == 0:
+                phrase = [(d + 2, du) for d, du in THEME_A]          # Variation eine Terz höher
             t = 0.0
-            while t < phrase_len - 0.5:
-                d = rnd.choice([1, 1, 2, 0.5, 1.5]) if mel != "brass" else rnd.choice([1, 0.5, 0.5, 2])
-                cur = max(0, min(len(scale) - 1, cur + rnd.choice([-2, -1, -1, 1, 1, 2, 0])))
-                pitch = scale[cur]
-                if mel == "ney":
-                    s.note(7, start + t, d * 0.95, pitch + 12, v * 0.95)
-                elif mel == "horn":
-                    s.note(4, start + t, d, pitch, v * 0.9)
-                elif mel == "brass":
-                    s.note(4, start + t, d, pitch, v * 0.95)
-                    s.note(8, start + t, d, pitch - 12, v * 0.8)
-                elif mel == "cello":
-                    s.note(2, start + t, d, pitch - 12, v * 0.95)
-                elif mel == "hymn":
-                    s.note(4, start + t, d, pitch, v * 0.8)
-                    s.note(7, start + t, d, pitch + 12, v * 0.6)
-                elif mel == "strings":
-                    s.note(0, start + t, d, pitch + 12, v * 0.7)
-                t += d
-    if mood == "legacy2":
-        # Schluss: D-Dur, lang gehalten
-        endb = bars * 4
-        for p in chord("D", 3):
+            for d, du in phrase:
+                du2 = du * k3 if meter == 3 else du
+                p = degree(tonic, mode, d, mel_oct)
+                if style == "fanfare":
+                    s.note(12, beat0 + t, du2, p + 12, v * 1.0)
+                    s.note(4, beat0 + t, du2, p, v * 0.85)
+                    s.note(8, beat0 + t, du2, p - 12, v * 0.7)
+                elif style == "march":
+                    s.note(4, beat0 + t, du2, p, v * 0.95)
+                    if b % 8 >= 4:
+                        s.note(12, beat0 + t, du2, p + 12, v * 0.7)
+                elif style == "soar":
+                    s.note(13, beat0 + t, du2 * 1.02, p, v * 0.9)
+                    s.note(0, beat0 + t, du2, p - 12, v * 0.4)
+                elif style == "cello":
+                    s.note(2, beat0 + t, du2, p, v * 0.95)
+                elif style == "ostinato":
+                    s.note(4, beat0 + t, du2, p, v * 0.9)
+                elif style == "clock":
+                    s.note(6, beat0 + t, du2, p, v * 0.75)
+                elif style == "hymn":
+                    s.note(12, beat0 + t, du2, p + 12, v * 0.8)
+                t += du2
+    if last:
+        endb = bars * meter
+        for p in chord(tonic, 3):
             s.note(0, endb, 8, p + 12, 80)
-            s.note(5, endb, 8, p + 12, 60)
-        s.note(1, endb, 8, 38, 80)
-        s.note(4, endb, 8, 66, 70)
+            s.note(5, endb, 8, p + 12, 62)
+        s.note(1, endb, 8, chord(tonic, 3)[0] - 12, 80)
+        s.note(12, endb, 8, chord(tonic, 3)[0] + 24, 60)
     return s
 
 
-def render_mood(mood, seconds, seed):
+def render_mood(mood, seconds, seed, last=False):
     os.makedirs(os.path.join(OUT, "music"), exist_ok=True)
     mid = os.path.join(OUT, "music", f"{seed:02d}_{mood}.mid")
     wav = mid.replace(".mid", ".wav")
-    compose(mood, seconds + 6, seed).save(mid)
+    compose(mood, seconds + 6, seed, last).save(mid)
     subprocess.run(["fluidsynth", "-ni", "-g", "0.55", "-r", str(SR), "-o", "synth.reverb.room-size=0.85",
                     "-o", "synth.reverb.width=1.0", "-o", "synth.reverb.level=0.75", "-F", wav, SF2, mid],
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -268,6 +304,32 @@ def place(buf, clip, t, gain, pan=0.0):
     buf[i:i + len(clip), 1] += clip * r
 
 
+def engine_rumble(dur, rnd):
+    """Panzermotoren: tiefes Dröhnen mit Kettenrasseln."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    noise = rnd.standard_normal(n).astype(np.float32)
+    low = signal.lfilter(*signal.butter(2, 140 / (SR / 2), "low"), noise)
+    low /= (np.abs(low).max() + 1e-9)
+    hum = np.sin(2 * np.pi * 36 * t + 0.6 * np.sin(2 * np.pi * 0.7 * t)) * 0.5
+    clank = signal.lfilter(*signal.butter(2, [900 / (SR / 2), 3000 / (SR / 2)], "band"), noise)
+    clank = clank / (np.abs(clank).max() + 1e-9) * (0.5 + 0.5 * np.sign(np.sin(2 * np.pi * 6.5 * t))) * 0.25
+    x = (0.8 * low + hum + clank) * envelope_points(n, [(0, 0), (1.5, 1), (max(1.6, dur - 2), 1), (dur, 0)])
+    return x.astype(np.float32)
+
+
+def plane_drone(dur, f0, rnd):
+    """Kolbenmotor eines Doppeldeckers: Sägezahn-Grundton mit Obertönen, an- und abschwellend."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    f = f0 * (1 + 0.06 * np.sin(2 * np.pi * t / max(dur, 1) * 1.0) + 0.01 * np.sin(2 * np.pi * 5 * t))
+    ph = 2 * np.pi * np.cumsum(f) / SR
+    x = sum(np.sin(k * ph) / k for k in range(1, 9))
+    x = signal.lfilter(*signal.butter(2, 1100 / (SR / 2), "low"), x)
+    x = x / (np.abs(x).max() + 1e-9) * envelope_points(n, [(0, 0), (min(3, dur / 3), 1), (max(0.1, dur - 3), 1), (dur, 0)])
+    return x.astype(np.float32)
+
+
 def build_sfx(tl, n):
     sfx = np.zeros((n, 2), np.float32)
     rnd = np.random.default_rng(7)
@@ -314,6 +376,35 @@ def build_sfx(tl, n):
             for ta, tb in o.fire:
                 for k in range(int((tb - ta) * 0.25)):
                     place(sfx, booms[(k + 1) % len(booms)], ta + rnd.random() * (tb - ta), 0.06, rnd.uniform(-0.7, 0.7))
+    # Panzer: Motoren, solange sie fahren; Treffer
+    for o in tl.objects:
+        name = type(o).__name__
+        if name == "Tanks":
+            for g in o.groups:
+                ta, tb = g.keys[0][0], min(g.keys[-1][0], tl.duration - 1)
+                if tb - ta < 1:
+                    continue
+                gain = min(0.03, 0.006 * math.log2(1 + g.n))
+                place(sfx, engine_rumble(tb - ta + 2.0, rnd), ta, gain, rnd.uniform(-0.4, 0.4))
+                for tk in g.ko[np.isfinite(g.ko)]:
+                    if tk < tl.duration:
+                        place(sfx, booms[int(rnd.integers(0, 6))], float(tk), 0.22, rnd.uniform(-0.6, 0.6))
+        elif name == "AirWar":
+            ps = o.planes
+            ta, tb = o.t0, min(o.t1, tl.duration - 0.5)
+            if tb - ta < 1:
+                continue
+            for j, f0 in enumerate((96.0, 118.0, 141.0)[: min(3, len(ps))]):
+                place(sfx, plane_drone(tb - ta, f0 * (0.97 + 0.06 * rnd.random()), rnd), ta + j * 0.4,
+                      min(0.10, 0.03 + 0.01 * len(ps)), (-0.5, 0.5, 0.0)[j])
+            for f0, f1 in o.fights:
+                for k in range(int(max(0.0, f1 - f0) * 6)):
+                    tt = f0 + rnd.random() * (f1 - f0)
+                    for r in range(5):
+                        place(sfx, shots[(k + r) % len(shots)] * 0.8, tt + r * 0.07, 0.05, rnd.uniform(-0.7, 0.7))
+            for pl in ps:
+                if pl.shot is not None and pl.shot + 5.5 < tl.duration:
+                    place(sfx, booms[1], pl.shot + 5.5, 0.30, rnd.uniform(-0.5, 0.5))
     # sanft begrenzen
     sfx = np.tanh(sfx * 1.2) / 1.2
     return sfx
@@ -327,14 +418,14 @@ def main():
     cues = sorted(tl.music) + [(tl.duration, None)]
     xf = 3.0
     for i, ((t0, mood), (t1, _)) in enumerate(zip(cues, cues[1:])):
-        seg = render_mood(mood, t1 - t0 + xf, i)
+        seg = render_mood(mood, t1 - t0 + xf, i, last=(i == len(cues) - 2))
         i0 = int(t0 * SR)
         L = min(len(seg), n - i0)
         seg = seg[:L]
         fin = np.clip(np.arange(L) / (xf * SR), 0, 1) if i > 0 else np.ones(L)
         tail_start = int((t1 - t0) * SR)
         fout = np.clip(1 - (np.arange(L) - tail_start) / (xf * SR), 0, 1)
-        if mood == "legacy2":
+        if i == len(cues) - 2:
             fout = np.ones(L)
         g = (np.sin(fin * np.pi / 2) * np.cos((1 - fout) * np.pi / 2)).astype(np.float32)
         music[i0:i0 + L] += seg * g[:, None]

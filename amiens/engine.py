@@ -491,7 +491,7 @@ class Token(Obj):
         fw = 46 * s
         gap = 5 * s
         fnum = font("cond_b", 36 * s)
-        txt = "" if self.loss_only else (fmt(val) + self.unit)
+        txt = "" if (self.loss_only or all(kv == 0 for _, kv in self.keys)) else (fmt(val) + self.unit)
         tw = fnum.measureText(txt) if txt else -gap
         bw = 12 * s + len(self.flags) * (fw + gap) + tw + 14 * s
         bh = 50 * s
