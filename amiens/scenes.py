@@ -128,7 +128,7 @@ def local_line(key):
         pts = _N_AUG + G.FRONTS[key] + _S_AUG
     else:
         pts = _N_1918 + G.FRONTS[key] + _S_1918
-    return E.resample(np.array(pts, float), 260)
+    return E.resample(np.array(pts, float), 240)
 
 
 def anchor_on(line, pos, side, dist_km):

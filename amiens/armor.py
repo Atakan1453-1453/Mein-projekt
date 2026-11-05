@@ -796,6 +796,11 @@ class WFront:
         self.states = [(a, b, E.resample(np.array(p, float), n)) for a, b, p in states]
 
     def line_at(self, t):
+        # nachträglich angehängte Zustände auf dieselbe Punktzahl bringen
+        n = len(self.states[0][2])
+        for i, (a, b, p) in enumerate(self.states):
+            if not isinstance(p, np.ndarray) or len(p) != n:
+                self.states[i] = (a, b, E.resample(np.array(p, float), n))
         cur = self.states[0][2]
         key = (0, 1.0)
         for i, (ta, tb, pts) in enumerate(self.states[1:], 1):
