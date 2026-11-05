@@ -581,7 +581,7 @@ add("P72", 8,
     "Musik-Teaser (neues Motiv)",
     "")
 add("P73", 8,
-    "Wenn du das nicht verpassen willst: Abonniere WarAZ. Wir sehen uns an der Somme.",
+    "Wenn du das nicht verpassen willst: Abonniere War A Zett. Wir sehen uns an der Somme.",
     "Endcard: Abo-Button-Fläche + Platz für 2 Video-Vorschläge (YouTube-Endscreen-Zonen, 20 s).",
     "WarAZ-Logo-Schriftzug, „ABONNIEREN“",
     "Outro-Jingle",

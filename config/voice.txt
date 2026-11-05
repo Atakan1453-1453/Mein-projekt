@@ -1,0 +1,8 @@
+# WarAZ – Sprecherstimme für alle Videos
+# (Vorschlag aus Stopp 2 „Verdun 1916“, gleiche Stimme wie Çanakkale, Verdun v1 und Amiens)
+engine=elevenlabs_v4
+voice_type=preset
+voice_id=d9d5c263-f84e-4752-97b5-3750fcc6fd2f
+name=Alistair
+# Higgsfield generate_audio: model=elevenlabs_v4, dialogue=[{text, voice_type, voice_id}]
+# Kosten 11/2026: ca. 0,0048 Credits pro Zeichen (≈ 2 Credits pro Absatz mit 430 Zeichen)
