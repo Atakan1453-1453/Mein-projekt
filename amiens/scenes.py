@@ -469,10 +469,10 @@ def build(known=None):
     T.add(MeasureLineSafe((49.930, 2.590), (49.800, 2.505), "ca. 20 km", w(k, 6.6), w(k, 12.0)))
     T.add(Label(*G.SOMME_LABEL, "SOMME", t0=w(k, 8.8), t1=T.end(k) + 1.0, size=22, style="sea", dot=False))
     T.add(Label(49.815, 2.47, "LUCE", t0=w(k, 10.2), t1=T.end(k) + 1.0, size=20, style="sea", dot=False))
-    T.add(Token(49.955, 2.560, [GB], [(0, 0)], label="III. Korps", side="al", t0=w(k, 13.3), t1=T.end("aufmarsch"), dy=-40))
-    T.add(Token(49.880, 2.530, [AU], [(0, 0)], label="Australier · Monash", side="al", t0=w(k, 16.6), t1=T.end("aufmarsch"), dy=-40))
-    T.add(Token(49.835, 2.490, [CA], [(0, 0)], label="Kanadier · Currie", side="al", t0=w(k, 19.2), t1=T.end("aufmarsch"), dy=-40))
-    T.add(Token(49.730, 2.480, [FR], [(0, 0)], label="1. Armee · Debeney", side="al", t0=w(k, 22.3), t1=T.end("aufmarsch"), dy=-40))
+    T.add(Token(49.955, 2.560, [GB], [(0, 0)], label="III. Korps", side="al", t0=w(k, 13.3), t1=T.end(k) + 1.0, dy=-40))
+    T.add(Token(49.880, 2.530, [AU], [(0, 0)], label="Australier · Monash", side="al", t0=w(k, 16.6), t1=T.end(k) + 1.0, dy=-40))
+    T.add(Token(49.835, 2.490, [CA], [(0, 0)], label="Kanadier · Currie", side="al", t0=w(k, 19.2), t1=T.end(k) + 1.0, dy=-40))
+    T.add(Token(49.730, 2.480, [FR], [(0, 0)], label="1. Armee · Debeney", side="al", t0=w(k, 22.3), t1=T.end(k) + 1.0, dy=-40))
     for pts, t_ in (([(49.955, 2.585), (49.950, 2.66)], 13.6), ([(49.885, 2.565), (49.875, 2.70)], 16.8),
                     ([(49.835, 2.535), (49.810, 2.68)], 19.5), ([(49.740, 2.520), (49.735, 2.62)], 23.6)):
         T.add(Arrow(pts, "al", t0=w(k, t_), grow=1.8, t1=T.end(k) + 1.0, width=12, dashed=True))
@@ -639,6 +639,8 @@ def build(known=None):
         T.add(Explosion(br[0] + 0.004, br[1] - 0.006, w(k, 15.2) + i * 0.6, size=1.0))
     T.add(Label(*P["peronne"], "Péronne", "Somme-Brücken", t0=w(k, 11.0), t1=T.end(k) + 1.0, size=22))
     T.cam(w(k, 9.5), Cam(49.88, 2.86, 34, 44, 84))
+    T.cam(w(k, 15.0), Cam(49.882, 2.862, 13, 48, 84))      # näher heran an den Luftkampf
+    T.cam(w(k, 24.0), Cam(49.88, 2.84, 26, 46, 84))
     T.add(Token(49.95, 2.72, [GB], [(0, 0), (w(k, 23.0), 0), (w(k, 26.0), 97)], label="RAF: Verluste am 8. August", side="al",
                 unit=" Flugzeuge", t0=w(k, 21.5), t1=T.end(k) + 1.0, dy=-50))
 
