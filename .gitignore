@@ -8,4 +8,4 @@ projects/verdun_1916/voice/*.wav
 
 # Hauptvideo liegt in export/verdun_1916_teile/ (zusammensetzen siehe README dort)
 export/verdun_1916.mp4
-export/verdun_1916_upload.mp4
+export/verdun_1916_upload*.mp4
