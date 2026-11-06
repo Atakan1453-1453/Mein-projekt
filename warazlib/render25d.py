@@ -89,12 +89,20 @@ class Look:
 
 
 class Renderer:
-    def __init__(self, layer, W=1920, H=1080):
+    def __init__(self, layer, W=1920, H=1080, scale=0.75):
         self.L = layer
         self.W, self.H = W, H
-        xs = (np.arange(W, dtype=f32) - W / 2 + 0.5)
-        ys = (np.arange(H, dtype=f32) - H / 2 + 0.5)
+        self.scale = scale
+        self.Wi, self.Hi = int(round(W * scale)), int(round(H * scale))
+        xs = (np.arange(self.Wi, dtype=f32) + 0.5) / scale - W / 2
+        ys = (np.arange(self.Hi, dtype=f32) + 0.5) / scale - H / 2
         self.sx, self.sy = np.meshgrid(xs, ys)
+        fx = (np.arange(W, dtype=f32) - W / 2 + 0.5)
+        fy = (np.arange(H, dtype=f32) - H / 2 + 0.5)
+        gx, gy = np.meshgrid(fx, fy)
+        r = (gx / (W / 2)) ** 2 + (gy / (H / 2)) ** 2
+        self.vig = (1 - 0.28 * np.clip(r - 0.35, 0, 1)).astype(f32)[..., None]
+        self._mxf = None
 
     # ---------------------------------------------------------------- Kamera-Geometrie
     def setup(self, cam):
@@ -123,6 +131,23 @@ class Renderer:
             return None
         s = self.F / zc
         return self.W / 2 + float(P @ self.r) * s, self.H / 2 - float(P @ self.u) * s, s, zc
+
+    def project_many(self, xs, ys, zs=None):
+        """Vektorisiert: Kartenpixel → (sx, sy, sichtbar)."""
+        xs = np.asarray(xs, np.float64)
+        ys = np.asarray(ys, np.float64)
+        if zs is None:
+            hh = self.L.height_half
+            xi = np.clip((xs / 2).astype(int), 0, hh.shape[1] - 1)
+            yi = np.clip((ys / 2).astype(int), 0, hh.shape[0] - 1)
+            zs = hh[yi, xi]
+        P = np.stack([xs, -ys, zs], 1) - self.C
+        zc = P @ self.f
+        ok = zc > 1e-3
+        s = self.F / np.where(ok, zc, 1.0)
+        sx = self.W / 2 + (P @ self.r) * s
+        sy = self.H / 2 - (P @ self.u) * s
+        return sx, sy, ok
 
     def ground_maps(self):
         """Pro Bildpunkt: Kartenkoordinaten (mx, my), Abstand (für Nebel)."""
@@ -155,25 +180,20 @@ class Renderer:
         foot = np.maximum(gxm, gym) * 0.8
         lod = np.log2(np.maximum(foot, 1e-3)).clip(0, L.levels - 1.001)
         lod = cv2.blur(lod, (15, 15))
-        l_lo = int(math.floor(float(lod.min())))
-        l_hi = min(int(math.floor(float(lod.max()))) + 1, L.levels - 1)
-        acc = None
-        wsum = np.zeros((self.H, self.W), f32)
-        for lvl in range(l_lo, l_hi + 1):
-            w = np.clip(1 - np.abs(lod - lvl), 0, 1)
-            if lvl == l_lo:
-                w = np.where(lod < lvl, 1.0, w)
-            if lvl == l_hi:
-                w = np.where(lod > lvl, 1.0, w)
-            if float(w.max()) <= 1e-3:
-                continue
-            sc = 1.0 / (2.0 ** lvl)
-            smp = cv2.remap(L.pyr[lvl], (mx * sc - 0.5 + 0.5 * sc).astype(f32), (my * sc - 0.5 + 0.5 * sc).astype(f32),
-                            cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE).astype(f32)
-            acc = smp * w[..., None] if acc is None else acc + smp * w[..., None]
-            wsum += w
-        acc /= np.maximum(wsum, 1e-4)[..., None]
-        self.mx, self.my, self.depth = mx, my, depth
+        l_lo = int(math.floor(float(np.percentile(lod[::8, ::8], 25))))
+        l_lo = min(max(l_lo, 0), L.levels - 2)
+        w = np.clip(lod - l_lo, 0, 1)[..., None]
+        sc = 1.0 / (2.0 ** l_lo)
+        acc = cv2.remap(L.pyr[l_lo], (mx * sc - 0.5 + 0.5 * sc).astype(f32), (my * sc - 0.5 + 0.5 * sc).astype(f32),
+                        cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE).astype(f32)
+        if float(w.max()) > 0.02:
+            sc2 = sc * 0.5
+            hi = cv2.remap(L.pyr[l_lo + 1], (mx * sc2 - 0.5 + 0.5 * sc2).astype(f32), (my * sc2 - 0.5 + 0.5 * sc2).astype(f32),
+                           cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE).astype(f32)
+            acc += (hi - acc) * w
+        wsum = None
+        self.mxi, self.myi, self.depth = mx, my, depth
+        self._mxf = None
         return acc
 
     def ground(self, look):
@@ -197,14 +217,16 @@ class Renderer:
         col = col * (1 - s2) + m * s2
         if look.regrow > 0:
             reg = np.clip(s1 * 1.5, 0, 1) * look.regrow
-            col = col * (1 - reg) + (b * fo + np.array([60, 92, 50], f32) * (1 - fo)) * reg
+            lm = np.clip(m.mean(-1, keepdims=True) / 110.0, 0.3, 1.6)
+            green = np.array([58, 88, 46], f32) * (0.55 + 0.55 * lm)
+            col = col * (1 - reg) + (b * fo + green * (1 - fo)) * reg
         if look.snow > 0:
             sn = (s[..., 11] / 255.0)[..., None]
             k = np.clip((sn - (1.0 - look.snow)) * 2.0, 0, 0.78) * (1 - 0.55 * s2) * (1 - 0.45 * fo)
             lumc = col.mean(-1, keepdims=True)
             snowc = np.array([214, 222, 234], f32) * (0.70 + 0.30 * np.clip(lumc / 120.0, 0, 1.4))
             col = col * (1 - k) + snowc * k
-        mx, my, depth = self.mx, self.my, self.depth
+        mx, my, depth = self.mxi, self.myi, self.depth
         outside = (mx < 0) | (my < 0) | (mx > L.W) | (my > L.H)
         dn = depth / max(1.0, float(np.median(depth)))
         fogk = np.clip((dn - 0.8) * 0.9, 0, 1) * min(1.0, look.fog * 3)
@@ -212,7 +234,27 @@ class Renderer:
         fogc = fogc * (1 - look.dawn) + np.array([150, 140, 150], f32) * look.dawn
         col = col * (1 - fogk[..., None]) + fogc * fogk[..., None]
         col[outside] = fogc
+        if self.scale != 1.0:
+            col = cv2.resize(col, (self.W, self.H), interpolation=cv2.INTER_CUBIC)
         return col
+
+    @property
+    def mx(self):
+        self._full_maps()
+        return self._mxf
+
+    @property
+    def my(self):
+        self._full_maps()
+        return self._myf
+
+    def _full_maps(self):
+        if self._mxf is None:
+            if self.scale == 1.0:
+                self._mxf, self._myf = self.mxi, self.myi
+            else:
+                self._mxf = cv2.resize(self.mxi, (self.W, self.H), interpolation=cv2.INTER_LINEAR)
+                self._myf = cv2.resize(self.myi, (self.W, self.H), interpolation=cv2.INTER_LINEAR)
 
     def grade(self, img, look):
         """Farbstimmung: Nacht, Morgendämmerung, Sättigung, Vignette."""
@@ -231,7 +273,4 @@ class Renderer:
             img = img * (1 - n) + (g * np.array([0.45, 0.55, 0.85], f32) * 0.55) * n
         if look.gas > 0:
             img = img * (1 - 0.25 * look.gas) + np.array([150, 170, 60], f32) * 0.25 * look.gas
-        # Vignette
-        r = (self.sx / (self.W / 2)) ** 2 + (self.sy / (self.H / 2)) ** 2
-        v = 1 - 0.28 * np.clip(r - 0.35, 0, 1)
-        return img * v[..., None]
+        return img * self.vig

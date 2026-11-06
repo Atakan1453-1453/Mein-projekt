@@ -22,21 +22,23 @@ import vgeo  # noqa: E402
 OUT = os.path.join(ROOT, "assets", "ww1", "maps", "verdun")
 DAYS = [("feb21", 1), ("feb24", 4), ("feb25", 5), ("feb26", 6), ("apr15", 55), ("may31", 101), ("jun07", 108),
         ("jun23", 124), ("jul12", 143), ("sep01", 194), ("oct24", 247), ("nov02", 256), ("dec18", 302)]
-Q = 4  # Viertel-Auflösung
+Q = 4  # Viertel-Auflösung (L3); L2 wird mit 1 gerechnet
 
 
 def main():
-    g = Grid.load(os.path.join(OUT, "L3_grid.json"))
-    w, h = g.w // Q + 1, g.h // Q + 1
-    px_km = g.px_per_km() / Q
+    pre = "L2" if "L2" in sys.argv else "L3"
+    g = Grid.load(os.path.join(OUT, f"{pre}_grid.json"))
+    q = 1 if pre == "L2" else Q
+    w, h = g.w // q + 1, g.h // q + 1
+    px_km = g.px_per_km() / q
     dists = []
     for key, day in DAYS:
         img = np.full((h, w), 255, np.uint8)
-        pts = np.array([g.px(la, lo) for (la, lo) in vgeo.FRONTS[key]], np.float32) / Q
+        pts = np.array([g.px(la, lo) for (la, lo) in vgeo.FRONTS[key]], np.float32) / q
         cv2.polylines(img, [np.round(pts).astype(np.int32)], False, 0, 2)
         dists.append(cv2.distanceTransform(img, cv2.DIST_L2, 5) / px_km)    # km
     rng = np.random.default_rng(3)
-    nz = _noise(h, w, 18, rng, 5)
+    nz = _noise(h, w, 18 if q == Q else 6, rng, 5)
     E = np.zeros((h, w), np.float32)
     on1 = np.full((h, w), 9999, np.float32)
     on2 = np.full((h, w), 9999, np.float32)
@@ -53,11 +55,11 @@ def main():
             E += rate
             on1 = np.where((on1 > 9000) & (E >= thr1), day, on1)
             on2 = np.where((on2 > 9000) & (E >= thr2), day, on2)
-    on1 = cv2.GaussianBlur(on1.clip(0, 9999), (0, 0), 3.0)
-    on2 = cv2.GaussianBlur(on2.clip(0, 9999), (0, 0), 3.0)
-    cv2.imwrite(os.path.join(OUT, "L3_onset1.png"), on1.clip(0, 65535).astype(np.uint16))
-    cv2.imwrite(os.path.join(OUT, "L3_onset2.png"), on2.clip(0, 65535).astype(np.uint16))
-    for day in (5, 101, 143, 302):
+    on1 = cv2.GaussianBlur(on1.clip(0, 9999), (0, 0), 3.0 if q == Q else 1.0)
+    on2 = cv2.GaussianBlur(on2.clip(0, 9999), (0, 0), 3.0 if q == Q else 1.0)
+    cv2.imwrite(os.path.join(OUT, f"{pre}_onset1.png"), on1.clip(0, 65535).astype(np.uint16))
+    cv2.imwrite(os.path.join(OUT, f"{pre}_onset2.png"), on2.clip(0, 65535).astype(np.uint16))
+    for day in (() if pre == "L2" else (5, 101, 143, 302)):
         s = (np.clip((day - on1) / 7, 0, 1) * 120 + np.clip((day - on2) / 25, 0, 1) * 135).astype(np.uint8)
         cv2.imwrite(os.path.join(ROOT, "work", "stilprobe", f"damage_day{day}.jpg"), s)
     print("ok", (on1 < 400).mean(), (on2 < 400).mean())

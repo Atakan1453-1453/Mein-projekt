@@ -40,7 +40,7 @@ PRONUNCIATION = {
     "Bois des Caures": "Boa de Kohr",
     "Voie Sacrée": "Woa Sa-kreh",
     "Bar-le-Duc": "Bar-lö-Dük",
-    "Louvemont": "Luv-mong",
+    "Louvemont": "Luw-mong",
     "Bezonvaux": "Be-song-woh",
     "Pour le Mérite": "Pur lö Me-riht",
     "Courage ! On les aura !": "Ku-rahsch! Ong lehs o-rah!",

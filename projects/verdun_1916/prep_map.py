@@ -22,6 +22,7 @@ OUT = os.path.join(ROOT, "assets", "ww1", "maps", "verdun")
 os.makedirs(OUT, exist_ok=True)
 
 GRID = Grid(49.08, 5.05, 49.36, 5.62, 6.0)
+GRID_L2 = Grid(48.70, 4.85, 49.45, 5.85, 30.0)
 
 # Dörfer 1916 (Name im vgeo.P, ungefähre Häuserzahl für die Darstellung)
 VILLAGES = [("douaumont_dorf", 34), ("fleury", 40), ("vaux_dorf", 26), ("damloup", 24), ("louvemont", 26),
@@ -35,7 +36,36 @@ EXTRA_VILLAGES = [((49.1985, 5.3600), 30), ((49.1620, 5.3530), 34), ((49.1790, 5
                   ((49.2080, 5.3150), 22), ((49.1180, 5.4180), 26), ((49.1480, 5.4410), 22)]
 
 
+def build_L2():
+    """Regionalkarte (30 m/px): Maas, Argonnen, Woëvre, Bar-le-Duc, Souilly."""
+    g = GRID_L2
+    dem = terrain_data.dem(g, 10, CACHE)
+    wc = terrain_data.worldcover(g, CACHE)
+    forts = []
+    for (name, la, lo, big) in vgeo.FORTS:
+        x, y = g.px(la, lo)
+        forts.append((x, y, 7 if name == "Douaumont" else 5, big))
+    pts = np.array([g.px(la, lo) for z in vgeo.ZONES.values() for (la, lo) in z], np.float32)
+    hull = cv2.convexHull(pts)[:, 0, :]
+    c = hull.mean(0)
+    hull = c + (hull - c) * 1.12
+    vx, vy = g.px(*vgeo.P["verdun"])
+    vill = [(x, y, n) for (x, y, n) in [(*g.px(*vgeo.P[k]), 6) for k, _ in VILLAGES]]
+    tex = mapstyle.build(dem, wc, g.ground_res, [], forts, (vx, vy), clear_poly=hull, city_r=60)
+    for k in ("base", "damaged", "moon"):
+        cv2.imwrite(os.path.join(OUT, f"L2_{k}.jpg"), tex[k][..., ::-1], [cv2.IMWRITE_JPEG_QUALITY, 92])
+    for k in ("forest", "water"):
+        cv2.imwrite(os.path.join(OUT, f"L2_{k}.png"), tex[k])
+    cv2.imwrite(os.path.join(OUT, "L2_snow.jpg"), tex["snow"], [cv2.IMWRITE_JPEG_QUALITY, 90])
+    half = cv2.resize(dem, (g.w // 2, g.h // 2), interpolation=cv2.INTER_AREA)
+    cv2.imwrite(os.path.join(OUT, "L2_dem16.png"), np.clip((half - 100) * 100, 0, 65535).astype(np.uint16))
+    g.save(os.path.join(OUT, "L2_grid.json"))
+    print("L2 fertig", g.w, g.h)
+
+
 def main():
+    if "L2" in sys.argv:
+        return build_L2()
     t = time.time()
     dem = terrain_data.dem(GRID, 12, CACHE)
     wc = terrain_data.worldcover(GRID, CACHE)

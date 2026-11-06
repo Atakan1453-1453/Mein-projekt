@@ -4,3 +4,4 @@ __pycache__/
 cache/
 output/*.wav
 work/
+projects/verdun_1916/voice/*.wav
