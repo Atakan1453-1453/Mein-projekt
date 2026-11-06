@@ -68,6 +68,8 @@ class Composer:
         self.gas = fxlib["gas"].astype(f32)
         self.muzzle = fxlib["muzzle"].astype(f32)
         self.caps = {}
+        self.short_mode = False
+        self.km_scale = 1.0
         rng = np.random.default_rng(7)
         n = rng.normal(0, 1, (H // 4, W // 4)).astype(f32)
         self.grain = [cv2.resize(np.roll(n, (i * 37, i * 53), (0, 1)), (W, H)) for i in range(8)]
@@ -301,10 +303,12 @@ class Composer:
         fr = st["frame"]
         if fr is None:
             return None
-        h2 = int(round(fr.shape[0] * self.W / fr.shape[1]))
-        fr = cv2.resize(fr, (self.W, max(self.H, h2)), interpolation=cv2.INTER_LANCZOS4)
+        sc = max(self.W / fr.shape[1], self.H / fr.shape[0])
+        nw, nh = int(round(fr.shape[1] * sc)), int(round(fr.shape[0] * sc))
+        fr = cv2.resize(fr, (max(self.W, nw), max(self.H, nh)), interpolation=cv2.INTER_LANCZOS4)
         y0 = (fr.shape[0] - self.H) // 2
-        fr = fr[y0:y0 + self.H, :, ::-1].astype(f32)
+        x0 = (fr.shape[1] - self.W) // 2
+        fr = fr[y0:y0 + self.H, x0:x0 + self.W, ::-1].astype(f32)
         # Filmlook: leicht entsättigt, Körnung, Vignette
         g = fr.mean(-1, keepdims=True)
         fr = g + (fr - g) * 0.88
@@ -317,6 +321,8 @@ class Composer:
         S = self.S
         self.ov.clear()
         gc = S.cam(t)
+        if self.km_scale != 1.0:
+            gc.km *= self.km_scale
         lk = self.look(t)
         mix = S.mapmix(t)
         img = None
@@ -358,7 +364,7 @@ class Composer:
         # Einblendungen
         ov = self.ov
         lay = self.layers["L2"] if mix > 0.5 else self.layers["L3"]
-        ca = S.counter_a(t) * (1 - clip_k)
+        ca = 0.0 if self.short_mode else S.counter_a(t) * (1 - clip_k)
         if ca > 0:
             date, day = day_to_date(lk.day)
             ov.counter(date, max(1, day), ca)
@@ -378,7 +384,7 @@ class Composer:
                     ov.d.ellipse((pr[0] - r, pr[1] - r * 0.45, pr[0] + r, pr[1] + r * 0.45),
                                  outline=UI.STYLE["warn"] + (int(230 * k),), width=4)
                     ov.place(text, pr[0], pr[1] - 70, k, side=1)
-        for (t0, t1, fn, fin, fout) in S.overlays:
+        for (t0, t1, fn, fin, fout) in ([] if self.short_mode else S.overlays):
             k = UI.fade(t, t0, t1, fin, fout)
             if k > 0:
                 fn(ov, t, k, lay)
@@ -386,8 +392,10 @@ class Composer:
             CD.ai_tag(ov, clip_k)
         img = UI.composite(img, ov.rgba())
         # Ein-/Ausblende des ganzen Videos
-        k = min(smooth(t / 1.0), smooth((S.duration - t) / 1.0))
-        img *= k
+        if not self.short_mode:
+            k = min(smooth(t / 1.0), smooth((S.duration - t) / 1.0))
+            img *= k
+        self.last_clip_k = clip_k
         return np.clip(img, 0, 255).astype(np.uint8)
 
     def rain_draw(self, img, t, amount):

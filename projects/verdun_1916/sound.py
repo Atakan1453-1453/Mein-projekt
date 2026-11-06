@@ -371,12 +371,12 @@ def compose(tl, S):
     pad(T("P57", 0.6), tl["P58"][1] + 0.4, ["F", "C", "D", "D"], vel=64)
     hit(T("P57", 0.62), 100)
     # Kapitel 7 – Finale / Bilanz
-    pad(T("P59") - 0.3, T("P65"), ["Dm", "Bb", "F", "A", "Dm", "Gm", "A", "Dm"], ch=8, vel=46)
-    ostinato(T("P61"), T("P65"), [74, 72, 69, 65, 69, 72], 0.9, ch=9, vel=48)
+    pad(T("P59") - 0.3, T("P65"), ["Dm", "Bb", "F", "A", "Dm", "Gm", "A", "Dm"], ch=0, vel=50)
+    ostinato(T("P61"), T("P65"), [74, 72, 69, 65, 69, 72], 0.9, ch=9, vel=72)
     pad(T("P65"), T("P69"), ["Dm", "Bb", "Gm", "A"], vel=58)
     pad(T("P69"), tl["P69"][1] + 1.0, ["Dm", "Bb", "F", "A"], vel=70)
-    pad(T("P70"), tl["P71"][1] + 0.8, ["F", "C", "Dm", "Bb", "F", "C"], ch=8, vel=48)
-    ostinato(T("P70"), tl["P71"][1], [77, 76, 72, 69, 72, 76], 0.7, ch=9, vel=44)
+    pad(T("P70"), tl["P71"][1] + 0.8, ["F", "C", "Dm", "Bb", "F", "C"], ch=0, vel=50)
+    ostinato(T("P70"), tl["P71"][1], [77, 76, 72, 69, 72, 76], 0.7, ch=9, vel=68)
     # Outro
     pad(T("P72") - 0.2, S.duration, ["Dm", "C", "Bb", "A", "Dm"], vel=54)
     ostinato(T("P72"), S.duration - 1.0, [62, 62, 69, 67, 65, 64], 0.35, ch=2, vel=50)
@@ -488,20 +488,22 @@ def main():
     k = min(N, len(m))
     mL[:k], mR[:k] = m[:k, 0], m[:k, 1]
     pk = max(np.abs(mL).max(), np.abs(mR).max()) + 1e-9
-    mL, mR = mL / pk * 0.42, mR / pk * 0.42
+    mL, mR = mL / pk * 0.95, mR / pk * 0.95
     mL = AU.duck(mL, voice, depth_db=-9.0)
     mR = AU.duck(mR, voice, depth_db=-9.0)
     # SFX unter der Stimme leicht absenken
     sL = AU.duck(L, voice, depth_db=-4.0)
     sR = AU.duck(R, voice, depth_db=-4.0)
-    sp = max(np.abs(sL).max(), np.abs(sR).max()) + 1e-9
-    if sp > 0.9:
-        sL, sR = sL / sp * 0.9, sR / sp * 0.9
+    sL, sR = sL * 1.4, sR * 1.4
+    sL, sR = 0.85 * np.tanh(sL / 0.85), 0.85 * np.tanh(sR / 0.85)
     outL = voice * 0.95 + mL + sL
     outR = voice * 0.95 + mR + sR
-    peak = max(np.abs(outL).max(), np.abs(outR).max())
-    if peak > 0.98:
-        outL, outR = outL / peak * 0.98, outR / peak * 0.98
+    def soft(x, th=0.8):
+        y = x.copy()
+        m = np.abs(x) > th
+        y[m] = np.sign(x[m]) * (th + (1 - th) * np.tanh((np.abs(x[m]) - th) / (1 - th)))
+        return y
+    outL, outR = soft(outL), soft(outR)
     st = np.stack([outL, outR], 1)
     wavfile.write(os.path.join(OUT, "mix.wav"), SR, (np.clip(st, -1, 1) * 32767).astype(np.int16))
     wavfile.write(os.path.join(OUT, "voice.wav"), SR, (np.clip(voice, -1, 1) * 32767).astype(np.int16))
