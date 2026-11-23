@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import Timeline from '../components/Timeline.astro';
-import Placeholder from '../components/Placeholder.astro';
+import Demo from '../components/Demo.astro';
 import CtaBand from '../components/CtaBand.astro';
 import Icon from '../components/Icon.astro';
 import { site } from '../config/site';
@@ -86,10 +86,27 @@ import { site } from '../config/site';
         <h2 id="team-title">Ihre Ansprechpartner vor Ort</h2>
         <p>Das Center-Management ist Ihr Ansprechpartner für Vermietung, Werbung im Center und alle Fragen rund um die Galerie Königshof.</p>
       </div>
-      <Placeholder label="Vorstellung des Center-Managements" block>
-        Name(n), Funktion und – nur mit Einwilligung – Foto der Ansprechpartner; optional ein kurzes Statement. Bitte vom
-        Center-Management liefern lassen.
-      </Placeholder>
+      <Demo label="Vorstellung des Center-Managements">
+        <ul class="team" role="list">
+        {
+          site.demoContent.management.map((person) => (
+            <li class="card team__card reveal">
+              <span class="team__avatar" aria-hidden="true">
+                {person.name
+                  .split(' ')
+                  .map((part) => part[0])
+                  .join('')}
+              </span>
+              <div>
+                <h3 class="team__name">{person.name}</h3>
+                <p class="team__role">{person.role}</p>
+                <p class="team__text">{person.text}</p>
+              </div>
+            </li>
+          ))
+        }
+        </ul>
+      </Demo>
       <p class="management__cta">
         <a class="link-arrow" href="/kontakt/#formular">
           Kontakt aufnehmen
@@ -183,5 +200,49 @@ import { site } from '../config/site';
 
   .management .section-head {
     margin-bottom: 0;
+  }
+
+  .team {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: var(--space-m);
+    padding: 0;
+    list-style: none;
+  }
+
+  .team__card {
+    display: flex;
+    gap: var(--space-m);
+    align-items: flex-start;
+  }
+
+  .team__avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 4rem;
+    height: 4.5rem;
+    border-radius: 999px 999px 12px 12px;
+    background: var(--c-royal-900);
+    color: var(--c-gold-300);
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+  }
+
+  .team__name {
+    font-size: var(--step-1);
+  }
+
+  .team__role {
+    font-size: var(--step--1);
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-gold-700);
+  }
+
+  .team__text {
+    margin-top: var(--space-xs);
+    color: var(--c-ink-muted);
   }
 </style>

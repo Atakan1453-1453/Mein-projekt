@@ -2,10 +2,10 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
-import Placeholder from '../components/Placeholder.astro';
+import Demo from '../components/Demo.astro';
 import { gallery } from '../data/gallery';
 
-const hasPlaceholders = gallery.some((img) => img.placeholder);
+const hasDemoImages = gallery.some((img) => img.demo);
 ---
 
 <BaseLayout
@@ -22,13 +22,10 @@ const hasPlaceholders = gallery.some((img) => img.placeholder);
     <div class="container">
       <h2 id="gallery-title" class="visually-hidden">Bilder</h2>
       {
-        hasPlaceholders && (
-          <div class="gallery-notice">
-            <Placeholder label="Echte Fotos für die Galerie" block>
-              Die Bilder unten sind neutrale Platzhalter. Bitte Fotos mit geklärten Nutzungsrechten ergänzen
-              (Anleitung: WARTUNG.md → „Galerie-Fotos austauschen“).
-            </Placeholder>
-          </div>
+        hasDemoImages && (
+          <Demo label="Galerie-Hinweis Symbolbilder">
+            <p class="note gallery-notice">Testversion: Die Bilder sind Symbolgrafiken und zeigen nicht das echte Center.</p>
+          </Demo>
         )
       }
       <GalleryGrid images={gallery} />

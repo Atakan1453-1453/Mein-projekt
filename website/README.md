@@ -2,6 +2,11 @@
 
 Statische, schnelle und datenschutzfreundliche Website mit serverseitig geprüftem Kontaktformular.
 
+> **Aktueller Stand: Testversion.** Kontakt-, Impressums- und Datenschutzangaben, Ansprechpartner,
+> Services und Galeriebilder sind **fiktive Beispiele** (Mustermann, Musterstadt, example.com).
+> Jede Seite zeigt einen Hinweisbalken, Suchmaschinen sind ausgesperrt und `npm run check:launch`
+> blockiert den Livegang. Umstellung auf echte Daten: [WARTUNG.md, Abschnitt 3.0](WARTUNG.md#30-von-der-testversion-zum-livebetrieb-).
+
 | | |
 |---|---|
 | **Technik** | [Astro 7](https://astro.build) (statische Seiten) + PHP 8.1+ (nur für das Kontaktformular) |
@@ -9,7 +14,7 @@ Statische, schnelle und datenschutzfreundliche Website mit serverseitig geprüft
 | **JavaScript** | insgesamt ca. 7 KB (komprimiert ca. 3,4 KB), nur für Menü, Formular-Komfort und Bildergalerie – alles funktioniert auch ohne |
 | **Tracking / Cookies** | keine – daher kein Cookie-Banner nötig |
 | **Schriften** | Fraunces & Inter, lokal eingebunden (keine Google-Fonts-Verbindung) |
-| **Qualität** | Lighthouse 98–100 in allen Kategorien, WCAG 2.2 AA (axe), 126 Browser- + 43 PHP-Tests |
+| **Qualität** | Lighthouse 98–100 in allen Kategorien, WCAG 2.2 AA (axe), 127 Browser- + 43 PHP-Tests |
 
 ## Schnellstart
 
@@ -37,7 +42,7 @@ die Test-Mails landen dann als `.eml`-Dateien im `storage_dir`.
 | `/shops/` | Shop-Verzeichnis nach Kategorien, Öffnungszeiten & Parken, Services, Vermietung |
 | `/galerie/` | Bildergalerie mit barrierefreier Großansicht |
 | `/kontakt/` | Kontaktformular (Anliegen-Auswahl, Zusatzfelder für Mietanfragen), Kontaktdaten, Anfahrt |
-| `/impressum/`, `/datenschutz/` | Rechtliches (Entwürfe mit Platzhaltern) |
+| `/impressum/`, `/datenschutz/` | Rechtliches (Entwürfe mit fiktiven Musterangaben) |
 | `/kontakt/danke/`, `/kontakt/fehler/`, `/404.html` | Status- und Fehlerseiten (noindex) |
 
 ## Ordnerstruktur

@@ -3,6 +3,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { PAGES, NOINDEX_PAGES } from './helpers';
+import { DEMO_MODE } from '../../src/config/site';
 
 const SITE = 'https://galeriekoenigshof.de';
 
@@ -28,7 +29,9 @@ test('jede Seite hat eigenen Titel, Beschreibung, Canonical und Open-Graph-Daten
 
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', SITE + path);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${SITE}/og-image.png`);
-    await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+    // Testversion: alle Seiten noindex; live: kein robots-Meta-Tag
+    if (DEMO_MODE) await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+    else await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   }
 
   expect(titles.size, 'Titel müssen eindeutig sein').toBe(PAGES.length);
@@ -57,12 +60,20 @@ test('Überschriften-Hierarchie überspringt keine Ebene', async ({ page }) => {
 test('robots.txt und Sitemap sind korrekt', async ({ request }) => {
   const robots = await (await request.get('/robots.txt')).text();
   expect(robots).toContain(`Sitemap: ${SITE}/sitemap-index.xml`);
-  expect(robots).toContain('Disallow: /api/');
+  expect(robots).toMatch(DEMO_MODE ? /^Disallow: \/$/m : /^Disallow: \/api\/$/m);
 
   const sitemap = await (await request.get('/sitemap-0.xml')).text();
   for (const { path } of PAGES) expect(sitemap).toContain(`<loc>${SITE}${path}</loc>`);
   for (const path of NOINDEX_PAGES) expect(sitemap).not.toContain(path);
   expect(sitemap).not.toContain('404');
+});
+
+test('Testversion ist als solche gekennzeichnet', async ({ page }) => {
+  test.skip(!DEMO_MODE, 'nur in der Testversion');
+  for (const { path } of PAGES) {
+    await page.goto(path);
+    await expect(page.getByRole('complementary', { name: 'Hinweis zur Testversion' })).toContainText('fiktive Beispiele');
+  }
 });
 
 test('strukturierte Daten (JSON-LD) auf der Startseite sind gültiges JSON mit Adresse und Öffnungszeiten', async ({ page }) => {
@@ -73,6 +84,9 @@ test('strukturierte Daten (JSON-LD) auf der Startseite sind gültiges JSON mit A
   expect(data.address.streetAddress).toBe('Talstraße 10');
   expect(data.address.postalCode).toBe('40822');
   expect(data.openingHoursSpecification[0].opens).toBe('10:00');
+  // Fiktive Testwerte dürfen nie in strukturierte Daten gelangen
+  expect(raw).not.toContain('example.com');
+  expect(raw).not.toContain('0000000');
 });
 
 test('Sicherheits-Header werden gesendet', async ({ request }) => {

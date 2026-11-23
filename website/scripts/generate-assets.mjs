@@ -4,7 +4,7 @@
  *   - public/apple-touch-icon.png  (180×180)
  *   - public/icon-192.png, icon-512.png (Web-App-Manifest)
  *   - public/favicon.ico           (32×32, PNG-in-ICO)
- *   - src/assets/gallery/platzhalter-*.jpg (neutrale Platzhalter für die Galerie)
+ *   - src/assets/gallery/platzhalter-*.jpg (Symbolgrafiken der Testversion für die Galerie)
  *
  * Aufruf:  npm run generate:assets
  * Benötigt: Playwright-Chromium (für Typografie) und sharp (Konvertierung).
@@ -116,7 +116,7 @@ const galleryHtml = (css, label, n) => {
     <g transform="translate(728 250) scale(3.6)" opacity=".9">${crown()}</g>
   </svg>
   <div class="label">
-    <span class="tag">Platzhalter · Foto folgt</span>
+    <span class="tag">Symbolbild · Testversion</span>
     <h2>${label}</h2>
     <p>Galerie Königshof Mettmann</p>
   </div>

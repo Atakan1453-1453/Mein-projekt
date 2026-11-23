@@ -54,6 +54,20 @@ Repository ausgeschlossen.
 
 ## 3. Häufige Änderungen
 
+### 3.0 Von der Testversion zum Livebetrieb 🟢/🟡
+Der aktuelle Stand ist eine **Testversion mit fiktiven Angaben**. In `src/config/site.ts`:
+1. Jeden Wert der Form `demo('…')` durch die echte Angabe ersetzen, z. B.
+   `phone: demo('+49 2104 0000000')` → `phone: '+49 2104 123456'`.
+   Ist eine Angabe noch unbekannt: `null` eintragen (→ sichtbarer Platzhalter).
+2. `demoContent` (Ansprechpartner, Services, Streitbeilegung, Bildnachweise) durch echte
+   Inhalte ersetzen. Die zugehörigen `<Demo …>`-Hüllen in `src/pages/ueber-uns.astro`,
+   `shops.astro`, `impressum.astro`, `datenschutz.astro` und `galerie.astro` entfernen
+   (den Inhalt darin behalten).
+3. Galerie: echte Fotos einsetzen und `demo: true` entfernen (Abschnitt 3.2).
+4. `DEMO_MODE` auf `false` setzen – damit verschwinden Hinweisbalken und `noindex`, und die
+   robots.txt gibt die Seite für Suchmaschinen frei.
+5. `npm run build && npm run check:launch` – meldet jede verbliebene fiktive Angabe.
+
 ### 3.1 Texte, Kontaktdaten, Öffnungszeiten, Shops 🟢
 Fast alle Angaben stehen in **`src/config/site.ts`**:
 
@@ -68,8 +82,9 @@ Fast alle Angaben stehen in **`src/config/site.ts`**:
 | Impressum-Angaben | `operator` |
 | Datenschutz-Angaben (Hoster, Mail-Anbieter …) | `privacy` – bei Änderungen `lastUpdated` anpassen |
 
-Ein Wert `null` erscheint auf der Website als gestrichelter **[Platzhalter: …]**. Einfach den
-echten Wert in Anführungszeichen eintragen, z. B. `phone: '+49 2104 123456',`.
+Ein Wert `null` erscheint auf der Website als gestrichelter **[Platzhalter: …]**, ein Wert
+`demo('…')` als fiktiver Beispielwert. Einfach den echten Wert in Anführungszeichen eintragen,
+z. B. `phone: '+49 2104 123456',`.
 
 Seitenspezifische Texte (Überschriften, Absätze) stehen direkt in `src/pages/*.astro` und
 lassen sich dort wie normaler Text ändern – nur die Zeichen `{ } < >` nicht anfassen.
@@ -86,7 +101,7 @@ und Zahlen nur mit Beleg und Freigabe veröffentlichen.
    // …
    { src: eingang, caption: 'Haupteingang', alt: 'Glasfront des Haupteingangs an der Talstraße bei Tag' },
    ```
-   `placeholder: true` dabei **entfernen**.
+   `demo: true` dabei **entfernen**.
 3. Nicht mehr verwendete `platzhalter-*.jpg` löschen.
 4. Bildnachweis im Impressum ergänzen (`src/pages/impressum.astro`, „Bildnachweise“).
 
@@ -120,10 +135,11 @@ Schriften liegen als `.woff2` in `src/assets/fonts/` (Lizenz: SIL OFL, Lizenztex
 3. In `tests/e2e/helpers.ts` (`PAGES`) ergänzen, damit sie mitgetestet wird.
 Die Sitemap wird automatisch aktualisiert.
 
-### 3.7 Platzhalter-Hinweise in Impressum/Datenschutz entfernen 🟡
-Nach rechtlicher Prüfung die Blöcke `<Placeholder label="Rechtliche Prüfung …">` in
-`src/pages/impressum.astro` und `src/pages/datenschutz.astro` löschen, ebenso den Block
-„Hinweis nach § 36 VSBG“ durch den abgestimmten Text ersetzen.
+### 3.7 Testversion-Hinweise in Impressum/Datenschutz entfernen 🟡
+Nach rechtlicher Prüfung die Hinweisblöcke `<Demo label="Muster-Impressum …">` bzw.
+`<Demo label="Muster-Datenschutzerklärung …">` in `src/pages/impressum.astro` und
+`src/pages/datenschutz.astro` löschen und den Text „Hinweis nach § 36 VSBG“ durch die vom
+Betreiber abgestimmte Formulierung ersetzen.
 
 ---
 
@@ -195,7 +211,7 @@ Header erzeugt jeder Build in `deploy/nginx-security-headers.conf`.
 | `build` | Build inkl. Selbstprüfung auf CSP-widrigen Inline-Code |
 | `validate:html` | HTML-Validität aller Seiten |
 | `check:links` | alle internen Links, Bilder und Sprungmarken (`-- --external` prüft auch externe Links) |
-| `test:e2e` | 126 Browser-Tests in 4 Bildschirmbreiten: Ladefehler, CSP-Verstöße, horizontales Scrollen, Barrierefreiheit (axe, WCAG 2.2 AA), Tastaturbedienung, Menü, Galerie, Formular inkl. Spam-Schutz und Betrieb ohne JavaScript, SEO-Metadaten, Sicherheits-Header, keine Cookies/Drittanbieter |
+| `test:e2e` | 127 Browser-Tests in 4 Bildschirmbreiten: Ladefehler, CSP-Verstöße, horizontales Scrollen, Barrierefreiheit (axe, WCAG 2.2 AA), Tastaturbedienung, Menü, Galerie, Formular inkl. Spam-Schutz und Betrieb ohne JavaScript, SEO-Metadaten, Sicherheits-Header, keine Cookies/Drittanbieter |
 
 Die GitHub-Action `.github/workflows/website.yml` führt dieselben Prüfungen bei jedem Push aus.
 

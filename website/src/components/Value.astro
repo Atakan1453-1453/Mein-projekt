@@ -1,23 +1,39 @@
 ---
 /**
- * Gibt einen Wert aus der Konfiguration aus – oder einen Platzhalter, wenn
- * der Wert (noch) `null` ist. Optional als Link (Telefon/E-Mail).
+ * Gibt einen Wert aus der Konfiguration aus:
+ *  - echter Wert        → normal (optional als Telefon-/E-Mail-Link)
+ *  - fiktiver demo(…)   → normal sichtbar, aber mit data-demo markiert
+ *                         (findet `npm run check:launch`)
+ *  - null               → sichtbarer Platzhalter
  */
 import Placeholder from './Placeholder.astro';
+import { textOf, type Pending } from '../config/site';
 
 interface Props {
-  value: string | null | undefined;
+  value: Pending | undefined;
   label: string;
   type?: 'text' | 'tel' | 'email';
 }
 
-const { value, label, type = 'text' } = Astro.props;
+const { value = null, label, type = 'text' } = Astro.props;
+const raw = textOf(value);
+// Telefonnummern nie umbrechen (geschützte Leerzeichen)
+const text = raw !== null && type === 'tel' ? raw.replace(/ /g, '\u00A0') : raw;
+const isDemo = value !== null && typeof value === 'object';
 const href =
-  value && type === 'tel'
-    ? `tel:${value.replace(/[^\d+]/g, '')}`
-    : value && type === 'email'
-      ? `mailto:${value}`
-      : undefined;
+  text && type === 'tel' ? `tel:${text.replace(/[^\d+]/g, '')}` : text && type === 'email' ? `mailto:${text}` : undefined;
 ---
 
-{value ? href ? <a href={href}>{value}</a> : <Fragment>{value}</Fragment> : <Placeholder label={label} />}
+{
+  text === null ? (
+    <Placeholder label={label} />
+  ) : href ? (
+    <a href={href} data-demo={isDemo ? label : undefined}>
+      {text}
+    </a>
+  ) : isDemo ? (
+    <span data-demo={label}>{text}</span>
+  ) : (
+    <Fragment>{text}</Fragment>
+  )
+}

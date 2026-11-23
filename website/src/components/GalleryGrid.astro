@@ -58,9 +58,9 @@ const large = await Promise.all(images.map((img) => getImage({ src: img.src, wid
             </a>
             <figcaption class="gallery__caption">
               {img.caption}
-              {img.placeholder && (
-                <span class="gallery__badge" data-placeholder={`Galeriefoto „${img.caption}“`}>
-                  Platzhalter
+              {img.demo && (
+                <span class="gallery__badge" data-demo={`Galeriefoto „${img.caption}“`}>
+                  Symbolbild
                 </span>
               )}
             </figcaption>

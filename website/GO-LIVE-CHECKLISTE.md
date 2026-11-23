@@ -6,6 +6,15 @@ ein Teil: `npm run check:launch` schlägt fehl, solange Platzhalter im Build ste
 
 ---
 
+## 0. Testversion beenden
+
+Der aktuelle Stand enthält **fiktive Beispielangaben** (Mustermann-Impressum, Ansprechpartner,
+Services, Parkgebühren, Kontaktdaten, Symbolbilder). Vorgehen: WARTUNG.md, Abschnitt 3.0.
+
+- [ ] Alle `demo('…')`-Werte und `demoContent` in `src/config/site.ts` durch echte Angaben ersetzt
+- [ ] `<Demo …>`-Hüllen in den Seiten entfernt, Galerie ohne `demo: true`
+- [ ] `DEMO_MODE = false` (kein Hinweisbalken, kein noindex, robots.txt offen)
+
 ## A. Freigabe & Inhalte (Center-Management / Betreiber)
 
 - [ ] **Auftrag/Freigabe klären:** Die Website verwendet Name und Adresse der Galerie Königshof. Vor

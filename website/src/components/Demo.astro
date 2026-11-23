@@ -1,0 +1,19 @@
+---
+/**
+ * Umschließt FIKTIVE Beispiel-Inhalte der Testversion (z. B. erfundene
+ * Ansprechpartner). Der Inhalt erscheint normal; das Attribut `data-demo`
+ * sorgt dafür, dass `npm run check:launch` ihn vor dem Livegang meldet.
+ *
+ *   <Demo label="Center-Management">…</Demo>
+ */
+interface Props {
+  /** Was hier fiktiv ist – erscheint in der Go-Live-Prüfung. */
+  label: string;
+  as?: 'div' | 'span' | 'p' | 'ul';
+  class?: string;
+}
+
+const { label, as: Tag = 'div', class: className } = Astro.props;
+---
+
+<Tag class={className} data-demo={label}><slot /></Tag>

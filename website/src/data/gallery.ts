@@ -9,7 +9,7 @@
  *  - Nur Fotos verwenden, für die Nutzungsrechte vorliegen.
  *  - Erkennbare Personen nur mit deren Einwilligung (DSGVO / KUG).
  *  - `alt` beschreibt, was auf dem Bild zu sehen ist (für Screenreader).
- *  - `placeholder: true` entfernen, sobald ein echtes Foto eingesetzt ist.
+ *  - `demo: true` entfernen, sobald ein echtes Foto eingesetzt ist.
  */
 import type { ImageMetadata } from 'astro';
 import aussenansicht from '../assets/gallery/platzhalter-01-aussenansicht.jpg';
@@ -26,18 +26,18 @@ export interface GalleryImage {
   src: ImageMetadata;
   alt: string;
   caption: string;
-  /** true = neutrales Platzhalterbild, vor dem Livegang ersetzen */
-  placeholder?: boolean;
+  /** true = Symbolgrafik der Testversion (kein echtes Foto), vor dem Livegang ersetzen */
+  demo?: boolean;
 }
 
 export const gallery: GalleryImage[] = [
-  { src: aussenansicht, caption: 'Außenansicht', alt: 'Platzhalterbild: hier folgt ein Foto der Außenansicht', placeholder: true },
-  { src: eingang, caption: 'Haupteingang', alt: 'Platzhalterbild: hier folgt ein Foto des Haupteingangs', placeholder: true },
-  { src: ladenstrasse, caption: 'Ladenstraße', alt: 'Platzhalterbild: hier folgt ein Foto der Ladenstraße', placeholder: true },
-  { src: schaufenster, caption: 'Schaufenster', alt: 'Platzhalterbild: hier folgt ein Foto eines Schaufensters', placeholder: true },
-  { src: gastronomie, caption: 'Gastronomie', alt: 'Platzhalterbild: hier folgt ein Foto des Gastronomiebereichs', placeholder: true },
-  { src: innenansicht, caption: 'Innenansicht', alt: 'Platzhalterbild: hier folgt eine Innenansicht', placeholder: true },
-  { src: parkhaus, caption: 'Parkhaus', alt: 'Platzhalterbild: hier folgt ein Foto des Parkhauses', placeholder: true },
-  { src: architektur, caption: 'Architekturdetail', alt: 'Platzhalterbild: hier folgt ein Architekturdetail', placeholder: true },
-  { src: abend, caption: 'Abendstimmung', alt: 'Platzhalterbild: hier folgt eine Abendaufnahme', placeholder: true },
+  { src: aussenansicht, caption: 'Außenansicht', alt: 'Symbolgrafik zum Thema Außenansicht (Testversion, kein Foto)', demo: true },
+  { src: eingang, caption: 'Haupteingang', alt: 'Symbolgrafik zum Thema Haupteingang (Testversion, kein Foto)', demo: true },
+  { src: ladenstrasse, caption: 'Ladenstraße', alt: 'Symbolgrafik zum Thema Ladenstraße (Testversion, kein Foto)', demo: true },
+  { src: schaufenster, caption: 'Schaufenster', alt: 'Symbolgrafik zum Thema Schaufenster (Testversion, kein Foto)', demo: true },
+  { src: gastronomie, caption: 'Gastronomie', alt: 'Symbolgrafik zum Thema Gastronomie (Testversion, kein Foto)', demo: true },
+  { src: innenansicht, caption: 'Innenansicht', alt: 'Symbolgrafik zum Thema Innenansicht (Testversion, kein Foto)', demo: true },
+  { src: parkhaus, caption: 'Parkhaus', alt: 'Symbolgrafik zum Thema Parkhaus (Testversion, kein Foto)', demo: true },
+  { src: architektur, caption: 'Architekturdetail', alt: 'Symbolgrafik zum Thema Architekturdetail (Testversion, kein Foto)', demo: true },
+  { src: abend, caption: 'Abendstimmung', alt: 'Symbolgrafik zum Thema Abendstimmung (Testversion, kein Foto)', demo: true },
 ];

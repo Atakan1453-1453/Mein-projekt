@@ -11,7 +11,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { site } from '../config/site';
+import { site, DEMO_MODE } from '../config/site';
 import interUrl from '../assets/fonts/inter-latin-wght-normal.woff2?url';
 import frauncesUrl from '../assets/fonts/fraunces-latin-wght-normal.woff2?url';
 
@@ -37,6 +37,8 @@ const ogImage = new URL('/og-image.png', Astro.site).href;
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     {noindex ? <meta name="robots" content="noindex, follow" /> : <link rel="canonical" href={canonical} />}
+    {/* Testversion: nie in Suchmaschinen aufnehmen (siehe DEMO_MODE in src/config/site.ts) */}
+    {DEMO_MODE && !noindex && <meta name="robots" content="noindex, nofollow" />}
 
     <link rel="preload" href={frauncesUrl} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={interUrl} as="font" type="font/woff2" crossorigin />
@@ -67,6 +69,14 @@ const ogImage = new URL('/og-image.png', Astro.site).href;
   </head>
   <body>
     <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+    {
+      DEMO_MODE && (
+        <aside class="demo-banner" aria-label="Hinweis zur Testversion" data-demo="Testversion-Hinweis">
+          <strong>Testversion</strong> – Kontakt-, Impressums- und Datenschutzangaben sowie Bilder sind fiktive Beispiele.
+          Nicht zur Veröffentlichung bestimmt.
+        </aside>
+      )
+    }
     <Header />
     <main id="inhalt" tabindex="-1">
       <slot />
@@ -78,5 +88,14 @@ const ogImage = new URL('/og-image.png', Astro.site).href;
 <style>
   main:focus {
     outline: none;
+  }
+
+  .demo-banner {
+    padding: 0.45rem var(--gutter);
+    background: var(--c-gold-200);
+    color: var(--c-royal-950);
+    font-size: var(--step--1);
+    line-height: 1.4;
+    text-align: center;
   }
 </style>

@@ -8,7 +8,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import Value from '../components/Value.astro';
-import Placeholder from '../components/Placeholder.astro';
+import Demo from '../components/Demo.astro';
 import { site } from '../config/site';
 
 const op = site.operator;
@@ -20,10 +20,10 @@ const op = site.operator;
   <section class="section">
     <div class="container">
       <div class="prose">
-        <Placeholder label="Rechtliche Prüfung des Impressums" block>
-          Dieses Impressum ist ein technisch vorbereiteter Entwurf. Alle Angaben müssen vom Betreiber geliefert und vor der
-          Veröffentlichung rechtlich geprüft werden.
-        </Placeholder>
+        <Demo label="Muster-Impressum (rechtliche Prüfung offen)" as="p" class="note">
+          <strong>Testversion:</strong> Alle Angaben in diesem Impressum sind fiktive Musterdaten. Für den Livegang müssen
+          sie vom Betreiber geliefert und rechtlich geprüft werden.
+        </Demo>
 
         <h2>Angaben gemäß § 5 DDG</h2>
         <p>
@@ -62,11 +62,9 @@ const op = site.operator;
         <p><Value value={op.editorialResponsible} label="Name und Anschrift der verantwortlichen Person" /></p>
 
         <h2>Verbraucherstreitbeilegung</h2>
-        <Placeholder label="Hinweis nach § 36 VSBG" block>
-          Vom Betreiber zu entscheiden. Üblicher Text, falls zutreffend: „Wir sind nicht bereit oder verpflichtet, an
-          Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.“ Hinweis: Die EU-Plattform zur
-          Online-Streitbeilegung wurde am 20. Juli 2025 eingestellt – ein Link darauf ist nicht mehr erforderlich.
-        </Placeholder>
+        {/* Vom Betreiber zu entscheiden (§ 36 VSBG). Ein Link zur EU-Plattform zur
+            Online-Streitbeilegung ist seit deren Einstellung am 20.07.2025 nicht mehr nötig. */}
+        <Demo label="Hinweis nach § 36 VSBG" as="p">{site.demoContent.consumerDisputes}</Demo>
 
         <h2>Haftung für Links</h2>
         <p>
@@ -81,7 +79,7 @@ const op = site.operator;
           außerhalb der Grenzen des Urheberrechts bedürfen der schriftlichen Zustimmung des jeweiligen Rechteinhabers.
         </p>
         <p>
-          Bildnachweise: <Placeholder label="Fotografen/Rechteinhaber der verwendeten Fotos" />
+          Bildnachweise: <Demo label="Bildnachweise" as="span">{site.demoContent.imageCredits}</Demo>
         </p>
         <p>
           Verwendete Schriften: Fraunces und Inter (SIL Open Font License 1.1), lokal auf diesem Server gespeichert.

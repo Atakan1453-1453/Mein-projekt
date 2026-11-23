@@ -13,7 +13,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import Value from '../components/Value.astro';
-import Placeholder from '../components/Placeholder.astro';
+import Demo from '../components/Demo.astro';
 import { site } from '../config/site';
 
 const op = site.operator;
@@ -29,10 +29,11 @@ const pv = site.privacy;
   <section class="section">
     <div class="container">
       <div class="prose">
-        <Placeholder label="Rechtliche Prüfung der Datenschutzerklärung" block>
-          Technisch vorbereiteter Entwurf, der die tatsächliche Datenverarbeitung dieser Website beschreibt. Vor der
-          Veröffentlichung vervollständigen und rechtlich prüfen lassen.
-        </Placeholder>
+        <Demo label="Muster-Datenschutzerklärung (rechtliche Prüfung offen)" as="p" class="note">
+          <strong>Testversion:</strong> Die Angaben zu Verantwortlichem, Hoster und E-Mail-Anbieter sind fiktive
+          Musterdaten. Die beschriebene Technik entspricht der Website. Vor dem Livegang vervollständigen und rechtlich
+          prüfen lassen.
+        </Demo>
 
         <h2>Das Wichtigste in Kürze</h2>
         <ul>

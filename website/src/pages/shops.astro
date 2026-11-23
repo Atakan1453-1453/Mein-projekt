@@ -2,7 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import ShopGrid from '../components/ShopGrid.astro';
-import Placeholder from '../components/Placeholder.astro';
+import Value from '../components/Value.astro';
+import Demo from '../components/Demo.astro';
 import VisitInfo from '../components/VisitInfo.astro';
 import CtaBand from '../components/CtaBand.astro';
 import Icon from '../components/Icon.astro';
@@ -46,9 +47,6 @@ import { site } from '../config/site';
           Öffnungszeiten.
         </span>
       </p>
-      <Placeholder label="Vollständiges Shop-Verzeichnis" block>
-        Bitte die aktuelle, vollständige Mieterliste vom Center-Management in src/config/site.ts eintragen.
-      </Placeholder>
     </div>
   </section>
 
@@ -61,7 +59,7 @@ import { site } from '../config/site';
       <VisitInfo />
       <p class="fees">
         <strong>Parkgebühren:</strong>
-        {site.parking.fees ?? <Placeholder label="Parkgebühren / Tarife des Parkhauses" />}
+        <Value value={site.parking.fees} label="Parkgebühren / Tarife des Parkhauses" />
       </p>
     </div>
   </section>
@@ -73,10 +71,19 @@ import { site } from '../config/site';
         <h2 id="services-title">Services im Center</h2>
         <p>Informationen zu Barrierefreiheit und weiteren Angeboten vor Ort.</p>
       </div>
-      <Placeholder label="Services im Center" block>
-        Z. B. barrierefreier Zugang, Aufzüge, Toiletten, Wickelraum, Fundsachen – nur Angebote aufführen, die das
-        Center-Management bestätigt hat.
-      </Placeholder>
+      <Demo label="Services im Center">
+        <ul class="services" role="list">
+        {
+          site.demoContent.services.map((service) => (
+            <li class="card services__item reveal">
+              <span class="services__icon"><Icon name="check" /></span>
+              <h3 class="services__title">{service.title}</h3>
+              <p>{service.text}</p>
+            </li>
+          ))
+        }
+        </ul>
+      </Demo>
     </div>
   </section>
 
@@ -134,5 +141,38 @@ import { site } from '../config/site';
 
   .fees {
     margin-top: var(--space-l);
+  }
+
+  .services {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-m);
+    padding: 0;
+    list-style: none;
+  }
+
+  .services__item {
+    display: grid;
+    align-content: start;
+    gap: var(--space-xs);
+  }
+
+  .services__icon {
+    display: inline-grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: var(--space-xs);
+    border-radius: 50%;
+    background: var(--c-cream-100);
+    color: var(--c-gold-700);
+  }
+
+  .services__title {
+    font-size: var(--step-1);
+  }
+
+  .services__item p {
+    color: var(--c-ink-muted);
   }
 </style>

@@ -3,7 +3,7 @@
  * Es werden nur Felder ausgegeben, deren Werte bekannt sind – fehlende
  * Angaben (null) werden weggelassen statt erfunden.
  */
-import { site } from '../config/site';
+import { site, realOf } from '../config/site';
 
 export function shoppingCenterJsonLd(siteUrl: URL | undefined): Record<string, unknown> {
   const base = siteUrl?.href ?? '/';
@@ -34,8 +34,11 @@ export function shoppingCenterJsonLd(siteUrl: URL | undefined): Record<string, u
     ],
   };
 
-  if (site.contact.phone) data['telephone'] = site.contact.phone;
-  if (site.contact.email) data['email'] = site.contact.email;
+  // Nur echte Angaben – fiktive Testwerte gehören nicht in die Suchmaschinen-Daten.
+  const phone = realOf(site.contact.phone);
+  const email = realOf(site.contact.email);
+  if (phone) data['telephone'] = phone;
+  if (email) data['email'] = email;
 
   return data;
 }
