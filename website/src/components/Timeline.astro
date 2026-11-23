@@ -1,0 +1,118 @@
+---
+/**
+ * Zeitleiste der Standortgeschichte (Daten: site.history).
+ * Variante „horizontal“ (Startseite) bricht mobil automatisch untereinander um.
+ */
+import { site } from '../config/site';
+
+interface Props {
+  variant?: 'horizontal' | 'vertical';
+}
+
+const { variant = 'vertical' } = Astro.props;
+---
+
+<ol class:list={['timeline', `timeline--${variant}`]} role="list">
+  {
+    site.history.map((item) => (
+      <li class="timeline__item reveal">
+        <p class="timeline__year">{item.year}</p>
+        <h3 class="timeline__title">{item.title}</h3>
+        <p class="timeline__text">{item.text}</p>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .timeline {
+    position: relative;
+    display: grid;
+    gap: var(--space-xl);
+    padding: 0;
+    list-style: none;
+  }
+
+  .timeline__item {
+    position: relative;
+    display: grid;
+    gap: var(--space-xs);
+    padding-left: 2.25rem;
+  }
+
+  /* Linie + Punkt */
+  .timeline__item::before {
+    content: '';
+    position: absolute;
+    left: 0.35rem;
+    top: 0.2rem;
+    bottom: calc(-1 * var(--space-xl));
+    width: 1px;
+    background: linear-gradient(var(--c-gold-500), rgb(196 154 72 / 0.15));
+  }
+
+  .timeline__item:last-child::before {
+    bottom: 0;
+    background: linear-gradient(var(--c-gold-500), transparent);
+  }
+
+  .timeline__item::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: var(--c-gold-400);
+    box-shadow: 0 0 0 5px rgb(212 177 106 / 0.18);
+  }
+
+  .timeline__year {
+    font-family: var(--font-display);
+    font-size: var(--step-3);
+    font-weight: 500;
+    line-height: 1.1;
+    color: var(--accent-text);
+  }
+
+  .timeline__title {
+    font-size: var(--step-1);
+  }
+
+  .timeline__text {
+    color: var(--muted);
+    max-width: 34rem;
+  }
+
+  @media (min-width: 56rem) {
+    .timeline--horizontal {
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-l);
+    }
+
+    .timeline--horizontal .timeline__item {
+      padding-left: 0;
+      padding-top: 2.25rem;
+    }
+
+    .timeline--horizontal .timeline__item::before {
+      left: 0;
+      right: calc(-1 * var(--space-l));
+      top: 0.35rem;
+      bottom: auto;
+      width: auto;
+      height: 1px;
+      background: linear-gradient(90deg, var(--c-gold-500), rgb(196 154 72 / 0.15));
+    }
+
+    .timeline--horizontal .timeline__item:last-child::before {
+      right: 0;
+      background: linear-gradient(90deg, var(--c-gold-500), transparent);
+    }
+
+    .timeline--horizontal .timeline__item::after {
+      top: 0;
+    }
+  }
+</style>

@@ -1,0 +1,37 @@
+---
+/**
+ * Sichtbarer Platzhalter für Angaben, die noch vom Center-Management kommen.
+ *
+ * - Erscheint gestrichelt umrandet, damit er beim Durchsehen sofort auffällt.
+ * - Trägt das Attribut `data-placeholder`; `npm run check:launch` findet so
+ *   alle offenen Stellen im fertigen Build und verhindert einen Livegang mit
+ *   unvollständigen Pflichtangaben.
+ *
+ * Verwendung:
+ *   <Placeholder label="Telefonnummer" />
+ *   <Placeholder label="Ansprechpartner" block>Optionaler Hinweistext</Placeholder>
+ */
+interface Props {
+  /** Was hier fehlt, z. B. „Registernummer“. */
+  label: string;
+  /** Als eigener Block statt im Fließtext darstellen. */
+  block?: boolean;
+}
+
+const { label, block = false } = Astro.props;
+const Tag = block ? 'div' : 'span';
+---
+
+<Tag class:list={['placeholder', { 'placeholder--block': block }]} data-placeholder={label}>
+  <span>[Platzhalter: {label}]</span>
+  {block && Astro.slots.has('default') && <span class="placeholder__hint"><slot /></span>}
+</Tag>
+
+<style>
+  .placeholder__hint {
+    display: block;
+    margin-top: 0.35em;
+    font-style: normal;
+    font-size: 0.9em;
+  }
+</style>

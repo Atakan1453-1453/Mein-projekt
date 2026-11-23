@@ -1,0 +1,306 @@
+---
+/**
+ * Bildergalerie mit barrierefreier Großansicht.
+ *
+ * Ohne JavaScript: Jedes Vorschaubild verlinkt auf die große Bilddatei.
+ * Mit JavaScript: Großansicht im nativen <dialog> (Fokus bleibt im Dialog,
+ * Escape schließt, Pfeiltasten blättern, Fokus kehrt zum Bild zurück).
+ */
+import { Picture, getImage } from 'astro:assets';
+import Icon from './Icon.astro';
+import type { GalleryImage } from '../data/gallery';
+
+interface Props {
+  images: GalleryImage[];
+  /** Nur Vorschau (Startseite): ohne Großansicht, ohne erstes Großformat. */
+  teaser?: boolean;
+}
+
+const { images, teaser = false } = Astro.props;
+
+// Große Variante für die Lightbox (WebP, max. 1600 px breit)
+const large = await Promise.all(images.map((img) => getImage({ src: img.src, width: 1600, format: 'webp' })));
+---
+
+<div class:list={['gallery', { 'gallery--teaser': teaser }]} data-gallery={teaser ? undefined : ''}>
+  <ul class="gallery__grid" role="list">
+    {
+      images.map((img, index) => (
+        <li class="gallery__item reveal">
+          <figure>
+            <a
+              class="gallery__link"
+              href={large[index]?.src}
+              data-gallery-index={index}
+              data-full={large[index]?.src}
+              data-caption={img.caption}
+              data-alt={img.alt}
+            >
+              <Picture
+                src={img.src}
+                alt={img.alt}
+                formats={['avif', 'webp']}
+                widths={[400, 640, 960, 1280]}
+                sizes={
+                  !teaser && index === 0
+                    ? '(min-width: 64rem) 780px, (min-width: 40rem) 92vw, 100vw'
+                    : '(min-width: 64rem) 390px, (min-width: 40rem) 46vw, 100vw'
+                }
+                loading={index < 3 ? 'eager' : 'lazy'}
+                fetchpriority={index === 0 && !teaser ? 'high' : 'auto'}
+                decoding="async"
+                class="gallery__img"
+              />
+              <span class="gallery__zoom">
+                <Icon name="zoom" size={20} />
+                <span class="visually-hidden">Großansicht: {img.caption}</span>
+              </span>
+            </a>
+            <figcaption class="gallery__caption">
+              {img.caption}
+              {img.placeholder && (
+                <span class="gallery__badge" data-placeholder={`Galeriefoto „${img.caption}“`}>
+                  Platzhalter
+                </span>
+              )}
+            </figcaption>
+          </figure>
+        </li>
+      ))
+    }
+  </ul>
+
+  {
+    !teaser && (
+      <dialog class="lightbox" aria-label="Bild-Großansicht" data-lightbox>
+        <div class="lightbox__inner">
+          <figure class="lightbox__figure">
+            <img class="lightbox__img" src={large[0]?.src} alt="" width="1600" height="1200" loading="lazy" data-lightbox-img />
+            <figcaption class="lightbox__caption">
+              <span data-lightbox-caption />
+              <span class="lightbox__counter" data-lightbox-counter />
+            </figcaption>
+          </figure>
+          <button class="lightbox__btn lightbox__btn--prev" type="button" data-lightbox-prev>
+            <Icon name="chevron-left" />
+            <span class="visually-hidden">Vorheriges Bild</span>
+          </button>
+          <button class="lightbox__btn lightbox__btn--next" type="button" data-lightbox-next>
+            <Icon name="chevron-right" />
+            <span class="visually-hidden">Nächstes Bild</span>
+          </button>
+          <button class="lightbox__btn lightbox__btn--close" type="button" data-lightbox-close>
+            <Icon name="close" />
+            <span class="visually-hidden">Großansicht schließen</span>
+          </button>
+        </div>
+      </dialog>
+    )
+  }
+</div>
+
+<script>
+  import { initLightbox } from '../scripts/lightbox';
+  initLightbox();
+</script>
+
+<style>
+  .gallery__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: var(--space-m);
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 40rem) {
+    .gallery:not(.gallery--teaser) .gallery__item:first-child {
+      grid-column: span 2;
+      grid-row: span 2;
+    }
+  }
+
+  .gallery__item figure {
+    display: grid;
+    gap: var(--space-xs);
+    height: 100%;
+  }
+
+  .gallery__link {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: var(--radius-m);
+    background: var(--c-royal-900);
+    aspect-ratio: 4 / 3;
+    height: 100%;
+  }
+
+  .gallery--teaser .gallery__link {
+    border-radius: 999px 999px var(--radius-m) var(--radius-m);
+    aspect-ratio: 1 / 1;
+  }
+
+  @media (min-width: 40rem) {
+    .gallery--teaser .gallery__link {
+      aspect-ratio: 4 / 5;
+    }
+  }
+
+  .gallery__link :global(.gallery__img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s var(--ease-out);
+  }
+
+  .gallery__link:hover :global(.gallery__img) {
+    transform: scale(1.04);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gallery__link:hover :global(.gallery__img) {
+      transform: none;
+    }
+  }
+
+  .gallery__zoom {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: rgb(252 250 246 / 0.92);
+    color: var(--c-royal-900);
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s var(--ease-out);
+  }
+
+  .gallery__link:hover .gallery__zoom,
+  .gallery__link:focus-visible .gallery__zoom {
+    opacity: 1;
+    transform: none;
+  }
+
+  .gallery__caption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 560;
+  }
+
+  .gallery__badge {
+    padding: 0.05rem 0.5rem;
+    border: 1px dashed var(--c-gold-700);
+    border-radius: 6px;
+    color: var(--c-gold-700);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    width: min(100vw - 1rem, 1200px);
+    max-width: none;
+    max-height: calc(100dvh - 1rem);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: var(--c-royal-950);
+    color: var(--c-white);
+    --focus: var(--c-gold-300);
+  }
+
+  .lightbox::backdrop {
+    background: rgb(12 10 26 / 0.86);
+    backdrop-filter: blur(4px);
+  }
+
+  .lightbox__inner {
+    position: relative;
+    padding: clamp(0.5rem, 2vw, 1.25rem);
+  }
+
+  .lightbox__figure {
+    display: grid;
+    gap: var(--space-s);
+  }
+
+  .lightbox__img {
+    width: 100%;
+    max-height: calc(100dvh - 7rem);
+    object-fit: contain;
+    border-radius: var(--radius-s);
+    background: #000;
+  }
+
+  .lightbox__caption {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-m);
+    padding-inline: 0.25rem 4rem;
+    font-weight: 560;
+  }
+
+  .lightbox__counter {
+    color: var(--c-royal-200);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lightbox__btn {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(252 250 246 / 0.94);
+    color: var(--c-royal-900);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s var(--ease-out);
+  }
+
+  .lightbox__btn:hover {
+    background: var(--c-gold-300);
+  }
+
+  .lightbox__btn--prev,
+  .lightbox__btn--next {
+    top: calc(50% - 1.5rem - 1rem);
+  }
+
+  .lightbox__btn--prev {
+    left: clamp(0.75rem, 2.5vw, 2rem);
+  }
+
+  .lightbox__btn--next {
+    right: clamp(0.75rem, 2.5vw, 2rem);
+  }
+
+  .lightbox__btn--close {
+    right: clamp(0.75rem, 2vw, 1.25rem);
+    bottom: clamp(0.25rem, 1.2vw, 0.75rem);
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] {
+      animation: lightbox-in 0.3s var(--ease-out);
+    }
+  }
+
+  @keyframes lightbox-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+</style>

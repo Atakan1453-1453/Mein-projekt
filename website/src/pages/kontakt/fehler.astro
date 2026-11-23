@@ -1,0 +1,63 @@
+---
+/**
+ * Wird nur angezeigt, wenn das Formular OHNE JavaScript abgeschickt wurde und
+ * der Server die Anfrage abgelehnt hat (mit JavaScript erscheinen die Fehler
+ * direkt am Formular).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import Value from '../../components/Value.astro';
+import formConfig from '../../config/contact-form.json';
+import { site } from '../../config/site';
+---
+
+<BaseLayout title="Anfrage nicht gesendet" description="Ihre Anfrage konnte nicht übermittelt werden." noindex>
+  <section class="section" aria-labelledby="status-title">
+    <div class="container container--narrow status">
+      <span class="status__icon"><Icon name="alert" size={32} /></span>
+      <h1 id="status-title">Ihre Anfrage konnte nicht gesendet werden</h1>
+      <p class="lead">Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut. Häufige Ursachen:</p>
+      <ul class="status__list">
+        <li>Name, E-Mail-Adresse, Anliegen und Nachricht sind Pflichtangaben.</li>
+        <li>Die E-Mail-Adresse muss vollständig sein (z. B. name@beispiel.de).</li>
+        <li>Die Nachricht muss mindestens {formConfig.fields.nachricht.minLength} Zeichen lang sein.</li>
+        <li>Zu viele Anfragen in kurzer Zeit – bitte warten Sie einige Minuten.</li>
+      </ul>
+      <p>
+        Tipp: Mit der Zurück-Funktion Ihres Browsers sind Ihre Eingaben meist noch vorhanden. Alternativ erreichen Sie uns per
+        E-Mail: <Value value={site.contact.email} label="E-Mail" type="email" />
+      </p>
+      <div class="btn-row">
+        <a class="btn" href="/kontakt/#formular">Zurück zum Formular <Icon name="arrow-right" /></a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .status {
+    display: grid;
+    gap: var(--space-l);
+    justify-items: start;
+  }
+
+  .status__icon {
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 999px 999px 14px 14px;
+    background: var(--c-error-bg);
+    color: var(--c-error);
+  }
+
+  .status h1 {
+    font-size: var(--step-4);
+  }
+
+  .status__list {
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.4rem;
+  }
+</style>

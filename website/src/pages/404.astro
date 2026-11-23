@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import { navigation } from '../config/site';
+---
+
+<BaseLayout title="Seite nicht gefunden" description="Die angeforderte Seite wurde nicht gefunden." noindex>
+  <section class="section" aria-labelledby="status-title">
+    <div class="container container--narrow notfound">
+      <p class="eyebrow">Fehler 404</p>
+      <h1 id="status-title">Diese Seite gibt es leider nicht</h1>
+      <p class="lead">
+        Vielleicht hat sich die Adresse geändert oder es hat sich ein Tippfehler eingeschlichen. Hier geht es weiter:
+      </p>
+      <ul class="notfound__links" role="list">
+        {
+          navigation.map((item) => (
+            <li>
+              <a class="link-arrow" href={item.href}>
+                {item.label}
+                <Icon name="arrow-right" />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .notfound {
+    display: grid;
+    gap: var(--space-l);
+  }
+
+  .notfound h1 {
+    font-size: var(--step-4);
+  }
+
+  .notfound__links {
+    display: grid;
+    gap: var(--space-xs);
+    padding: 0;
+    list-style: none;
+  }
+</style>

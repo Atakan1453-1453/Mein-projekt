@@ -1,0 +1,347 @@
+---
+/**
+ * Kontaktformular.
+ *
+ * Funktioniert OHNE JavaScript (klassischer POST an den PHP-Handler mit
+ * Weiterleitung auf Danke-/Fehlerseite) und wird MIT JavaScript verbessert:
+ * barrierefreie Fehlermeldungen direkt am Feld, Fehlerübersicht, Versand
+ * per fetch, Spam-Schutz-Token, Vorauswahl des Anliegens per URL
+ * (z. B. /kontakt/?anliegen=vermietung).
+ *
+ * Feldregeln (Pflicht, Länge, Muster) stammen aus src/config/contact-form.json –
+ * dieselbe Datei nutzt auch der Server. Bitte nur dort ändern.
+ */
+import formConfig from '../config/contact-form.json';
+import Icon from './Icon.astro';
+
+const f = formConfig.fields;
+const spam = formConfig.spam;
+---
+
+<form
+  class="contact-form"
+  id="formular"
+  method="post"
+  action={formConfig.endpoint}
+  accept-charset="UTF-8"
+  data-contact-form
+  data-endpoint={formConfig.endpoint}
+  data-success={formConfig.successPath}
+  aria-describedby="form-required-note"
+>
+  <div class="form-summary" role="alert" tabindex="-1" data-form-summary hidden>
+    <h3 class="form-summary__title">
+      <Icon name="alert" size={20} />
+      <span data-form-summary-title>Bitte prüfen Sie Ihre Angaben</span>
+    </h3>
+    <ul data-form-summary-list></ul>
+  </div>
+
+  <p class="form-note" id="form-required-note">Felder mit <span aria-hidden="true">*</span><span class="visually-hidden">Sternchen</span> sind Pflichtfelder.</p>
+
+  <div class="field field--full">
+    <label for="anliegen">Ihr Anliegen <span class="req" aria-hidden="true">*</span></label>
+    <select id="anliegen" name="anliegen" required aria-describedby="anliegen-error" data-topic-select>
+      <option value="">Bitte auswählen …</option>
+      {formConfig.topics.map((t) => <option value={t.value}>{t.label}</option>)}
+    </select>
+    <p class="field__error" id="anliegen-error" hidden></p>
+  </div>
+
+  <div class="field">
+    <label for="name">Name <span class="req" aria-hidden="true">*</span></label>
+    <input
+      id="name"
+      name="name"
+      type="text"
+      autocomplete="name"
+      required
+      minlength={f.name.minLength}
+      maxlength={f.name.maxLength}
+      aria-describedby="name-error"
+    />
+    <p class="field__error" id="name-error" hidden></p>
+  </div>
+
+  <div class="field">
+    <label for="firma">Firma <span class="optional">(optional)</span></label>
+    <input id="firma" name="firma" type="text" autocomplete="organization" maxlength={f.firma.maxLength} />
+  </div>
+
+  <div class="field">
+    <label for="email">E-Mail-Adresse <span class="req" aria-hidden="true">*</span></label>
+    <input
+      id="email"
+      name="email"
+      type="email"
+      autocomplete="email"
+      inputmode="email"
+      spellcheck="false"
+      required
+      maxlength={f.email.maxLength}
+      aria-describedby="email-error"
+    />
+    <p class="field__error" id="email-error" hidden></p>
+  </div>
+
+  <div class="field">
+    <label for="telefon">Telefon <span class="optional">(optional)</span></label>
+    <input
+      id="telefon"
+      name="telefon"
+      type="tel"
+      autocomplete="tel"
+      maxlength={f.telefon.maxLength}
+      pattern={f.telefon.pattern}
+      aria-describedby="telefon-hint telefon-error"
+    />
+    <p class="field__hint" id="telefon-hint">Für einen Rückruf – nur Ziffern, Leerzeichen und + ( ) / -</p>
+    <p class="field__error" id="telefon-error" hidden></p>
+  </div>
+
+  <fieldset class="field--full rental" data-rental-fields>
+    <legend>Angaben zur Mietanfrage <span class="optional">(optional, nur bei Mietanfragen)</span></legend>
+    <div class="rental__grid">
+      <div class="field">
+        <label for="branche">Branche / Sortiment</label>
+        <input id="branche" name="branche" type="text" maxlength={f.branche.maxLength} />
+      </div>
+      <div class="field">
+        <label for="flaeche">Flächenbedarf (ca. m²)</label>
+        <input id="flaeche" name="flaeche" type="text" inputmode="numeric" maxlength={f.flaeche.maxLength} />
+      </div>
+      <div class="field">
+        <label for="zeitraum">Gewünschter Starttermin</label>
+        <input id="zeitraum" name="zeitraum" type="text" maxlength={f.zeitraum.maxLength} aria-describedby="zeitraum-hint" />
+        <p class="field__hint" id="zeitraum-hint">z. B. „ab Frühjahr 2027“</p>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="field field--full">
+    <label for="nachricht">Ihre Nachricht <span class="req" aria-hidden="true">*</span></label>
+    <textarea
+      id="nachricht"
+      name="nachricht"
+      rows="7"
+      required
+      minlength={f.nachricht.minLength}
+      maxlength={f.nachricht.maxLength}
+      aria-describedby="nachricht-hint nachricht-error"></textarea>
+    <p class="field__hint" id="nachricht-hint">Mindestens {f.nachricht.minLength} Zeichen.</p>
+    <p class="field__error" id="nachricht-error" hidden></p>
+  </div>
+
+  <!-- Spam-Schutz: für Menschen unsichtbar. Bitte NICHT entfernen. -->
+  <div class="hp" aria-hidden="true">
+    <label for={spam.honeypotField}>Website (bitte leer lassen)</label>
+    <input id={spam.honeypotField} name={spam.honeypotField} type="text" tabindex="-1" autocomplete="off" />
+  </div>
+  <input type="hidden" name={spam.tokenField} value="" data-form-token />
+
+  <p class="field--full form-privacy">
+    Mit dem Absenden werden Ihre Angaben ausschließlich zur Bearbeitung Ihrer Anfrage verwendet. Weitere Informationen
+    finden Sie in unserer <a href="/datenschutz/#kontaktformular">Datenschutzerklärung</a>.
+  </p>
+
+  <div class="field--full form-actions">
+    <button class="btn" type="submit" data-submit>
+      <span data-submit-label>Anfrage senden</span>
+      <Icon name="arrow-right" />
+    </button>
+    <p class="form-status" role="status" aria-live="polite" data-form-status></p>
+  </div>
+</form>
+
+<script>
+  import { initContactForm } from '../scripts/contact-form';
+  initContactForm();
+</script>
+
+<style>
+  .contact-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--space-m) var(--space-m);
+  }
+
+  .field--full,
+  .form-summary,
+  .form-note {
+    grid-column: 1 / -1;
+  }
+
+  .form-note {
+    color: var(--c-ink-muted);
+    font-size: var(--step--1);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.4rem;
+    align-content: start;
+  }
+
+  label,
+  legend {
+    font-weight: 620;
+  }
+
+  .req {
+    color: var(--c-error);
+  }
+
+  .optional {
+    font-weight: 400;
+    color: var(--c-ink-muted);
+    font-size: 0.9em;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.7rem 0.9rem;
+    border: 1.5px solid var(--c-field-border);
+    border-radius: var(--radius-s);
+    background: var(--c-white);
+    line-height: 1.4;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  select {
+    appearance: none;
+    padding-right: 2.5rem;
+    background-image: linear-gradient(45deg, transparent 50%, var(--c-royal-800) 50%),
+      linear-gradient(135deg, var(--c-royal-800) 50%, transparent 50%);
+    background-position: calc(100% - 1.25rem) 55%, calc(100% - 0.9rem) 55%;
+    background-size: 0.35rem 0.35rem;
+    background-repeat: no-repeat;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 10rem;
+  }
+
+  input:hover,
+  select:hover,
+  textarea:hover {
+    border-color: var(--c-royal-700);
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid var(--c-royal-700);
+    outline-offset: 1px;
+    border-color: var(--c-royal-700);
+  }
+
+  [aria-invalid='true'] {
+    border-color: var(--c-error);
+    background: var(--c-error-bg);
+  }
+
+  .field__hint {
+    font-size: var(--step--1);
+    color: var(--c-ink-muted);
+  }
+
+  .field__error {
+    display: flex;
+    gap: 0.4rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--c-error);
+  }
+
+  .field__error[hidden] {
+    display: none;
+  }
+
+  .rental {
+    padding: var(--space-m);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-m);
+    background: var(--c-cream-50);
+  }
+
+  .rental[hidden] {
+    display: none;
+  }
+
+  .rental legend {
+    padding-inline: 0.4rem;
+  }
+
+  .rental__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: var(--space-m);
+    margin-top: var(--space-xs);
+  }
+
+  /* Honeypot – außerhalb des sichtbaren Bereichs, nicht display:none
+     (manche Bots überspringen ausgeblendete Felder). */
+  .hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .form-privacy {
+    font-size: var(--step--1);
+    color: var(--c-ink-muted);
+  }
+
+  .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-m);
+  }
+
+  .form-actions .btn[disabled] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+
+  .form-status {
+    font-weight: 600;
+  }
+
+  .form-summary {
+    padding: var(--space-m) var(--space-l);
+    border: 1.5px solid var(--c-error);
+    border-radius: var(--radius-m);
+    background: var(--c-error-bg);
+  }
+
+  .form-summary:focus-visible {
+    outline: 3px solid var(--c-royal-700);
+  }
+
+  .form-summary__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-size: var(--step-0);
+    font-weight: 700;
+    color: var(--c-error);
+  }
+
+  .form-summary ul {
+    margin-top: var(--space-xs);
+    padding-left: 1.2rem;
+  }
+
+  .form-summary a {
+    color: var(--c-error);
+    font-weight: 600;
+  }
+</style>

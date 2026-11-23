@@ -1,0 +1,40 @@
+{
+  "name": "galerie-koenigshof-website",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Website der Galerie Königshof Mettmann – Astro (statisch) + PHP-Kontaktformular",
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && node scripts/postbuild.mjs",
+    "preview": "npm run build && php -S 127.0.0.1:8080 -t dist scripts/php-router.php",
+    "serve:test": "KONTAKT_CONFIG=tests/fixtures/kontakt-config.test.php php -S 127.0.0.1:4322 -t dist scripts/php-router.php",
+    "check": "astro check",
+    "test": "npm run check && npm run test:php && npm run build && npm run validate:html && npm run check:links && npm run test:e2e",
+    "test:php": "php php/vendor/bin/phpunit -c php/phpunit.xml",
+    "test:e2e": "playwright test",
+    "validate:html": "html-validate \"dist/**/*.html\"",
+    "check:links": "node scripts/check-links.mjs",
+    "check:launch": "node scripts/check-launch.mjs",
+    "generate:assets": "node scripts/generate-assets.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.7.4",
+    "astro": "7.4.7",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.63.0",
+    "html-validate": "11.20.0",
+    "node-html-parser": "9.0.7",
+    "typescript": "6.0.3"
+  },
+  "overrides": {
+    "playwright-core": "1.63.0"
+  }
+}

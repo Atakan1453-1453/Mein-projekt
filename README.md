@@ -1,4 +1,15 @@
-# Galerie Königshof Mettmann – 60-Sekunden-Präsentationsvideo
+# Galerie Königshof Mettmann
+
+Dieses Repository enthält zwei Projekte:
+
+| Ordner | Inhalt |
+|---|---|
+| [`website/`](website/) | **Unternehmenswebsite** (Astro + PHP-Kontaktformular) – siehe [website/README.md](website/README.md), [Wartungsanleitung](website/WARTUNG.md) und [Go-Live-Checkliste](website/GO-LIVE-CHECKLISTE.md) |
+| `video/`, `output/` | 60-Sekunden-Präsentationsvideo (siehe unten) |
+
+---
+
+## 60-Sekunden-Präsentationsvideo
 
 **Fertiges Video:** [`output/galerie-koenigshof-mettmann-60s.mp4`](output/galerie-koenigshof-mettmann-60s.mp4)
 (1920×1080, 30 fps, H.264/AAC, 60 s, ca. 8 MB)

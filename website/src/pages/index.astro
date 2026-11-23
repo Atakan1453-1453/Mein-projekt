@@ -1,0 +1,329 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroArt from '../components/HeroArt.astro';
+import Icon from '../components/Icon.astro';
+import ShopGrid from '../components/ShopGrid.astro';
+import Timeline from '../components/Timeline.astro';
+import VisitInfo from '../components/VisitInfo.astro';
+import GalleryGrid from '../components/GalleryGrid.astro';
+import CtaBand from '../components/CtaBand.astro';
+import { site } from '../config/site';
+import { gallery } from '../data/gallery';
+import { shoppingCenterJsonLd } from '../lib/structured-data';
+---
+
+<BaseLayout jsonLd={shoppingCenterJsonLd(Astro.site)}>
+  <!-- Startbereich ---------------------------------------------------- -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="container hero__grid">
+      <div class="hero__text">
+        <p class="eyebrow enter">{site.address.street} · {site.city}</p>
+        <h1 id="hero-title" class="hero__title enter delay-1">
+          Shopping im Herzen <span class="hero__accent">der Stadt</span>
+        </h1>
+        <p class="lead enter delay-2">
+          Über 20 Shops, Gastronomie und Services unter einem Dach – mit eigenem Parkhaus und über 400 Stellplätzen.
+        </p>
+        <div class="btn-row enter delay-3">
+          <a class="btn" href="/shops/">
+            Shops entdecken
+            <Icon name="arrow-right" />
+          </a>
+          <a class="btn btn--ghost" href="#besuch">Anfahrt &amp; Öffnungszeiten</a>
+        </div>
+      </div>
+
+      <div class="hero__visual enter delay-2">
+        <HeroArt />
+        <div class="hero__badge card">
+          <span class="hero__badge-icon"><Icon name="clock" /></span>
+          <div>
+            <p class="hero__badge-label">Geöffnet {site.openingHours.days}</p>
+            <p class="hero__badge-time">{site.openingHours.time}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Kennzahlen ------------------------------------------------------- -->
+  <section class="facts" aria-label="Die Galerie Königshof in Zahlen">
+    <div class="container">
+      <dl class="facts__list">
+        {
+          site.stats.map((stat) => (
+            <div class="facts__item reveal">
+              <dt class="facts__label">
+                {stat.label}
+                <span class="facts__detail">{stat.detail}</span>
+              </dt>
+              <dd class="facts__value">{stat.value}</dd>
+            </div>
+          ))
+        }
+        <div class="facts__item reveal">
+          <dt class="facts__label">
+            Parkhaus geöffnet
+            <span class="facts__detail">rund um die Uhr</span>
+          </dt>
+          <dd class="facts__value">24 h</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Shops -------------------------------------------------------------- -->
+  <section class="section" aria-labelledby="shops-title">
+    <div class="container">
+      <div class="split-head">
+        <div class="section-head">
+          <p class="eyebrow">Shops &amp; Services</p>
+          <h2 id="shops-title">Alles für den täglichen Bedarf – und ein bisschen mehr</h2>
+          <p>Mode, Schuhe, Drogerie, Apotheke, Bücher, Blumen und Gastronomie: eine Auswahl der Shops in der Galerie Königshof.</p>
+        </div>
+        <a class="link-arrow split-head__link" href="/shops/">
+          Alle Shops &amp; Services
+          <Icon name="arrow-right" />
+        </a>
+      </div>
+      <ShopGrid shops={site.shops} />
+    </div>
+  </section>
+
+  <!-- Geschichte ------------------------------------------------------- -->
+  <section class="section section--dark history" aria-labelledby="history-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Geschichte</p>
+        <h2 id="history-title">Ein Handelsstandort mit Tradition</h2>
+        <p>
+          Bereits 1972 entstand an der Talstraße ein Kaufhaus. 2019 wurde der Standort nach 14 Monaten Umbau als Galerie
+          Königshof neu eröffnet.
+        </p>
+      </div>
+      <Timeline variant="horizontal" />
+      <p class="history__more">
+        <a class="link-arrow" href="/ueber-uns/">
+          Mehr über die Galerie Königshof
+          <Icon name="arrow-right" />
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Besuch planen ---------------------------------------------------- -->
+  <section class="section section--sand" id="besuch" aria-labelledby="visit-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Ihr Besuch</p>
+        <h2 id="visit-title">Bequem ankommen, entspannt einkaufen</h2>
+        <p>{site.parking.summary} – das Parkhaus ist 24 Stunden geöffnet.</p>
+      </div>
+      <VisitInfo />
+    </div>
+  </section>
+
+  <!-- Galerie-Vorschau -------------------------------------------------- -->
+  <section class="section" aria-labelledby="gallery-title">
+    <div class="container">
+      <div class="split-head">
+        <div class="section-head">
+          <p class="eyebrow">Galerie</p>
+          <h2 id="gallery-title">Eindrücke aus dem Center</h2>
+        </div>
+        <a class="link-arrow split-head__link" href="/galerie/">
+          Zur Galerie
+          <Icon name="arrow-right" />
+        </a>
+      </div>
+      <GalleryGrid images={gallery.slice(0, 3)} teaser />
+    </div>
+  </section>
+
+  <!-- Vermietung ------------------------------------------------------- -->
+  <CtaBand
+    eyebrow="Vermietung & Werbung"
+    title="Ihr Auftritt in der Galerie Königshof"
+    text="Sie interessieren sich für eine Mietfläche oder möchten im Center werben? Das Center-Management beantwortet Ihre Anfrage gerne."
+    primary={{ href: '/kontakt/?anliegen=vermietung#formular', label: 'Mietanfrage stellen' }}
+    secondary={{ href: '/kontakt/?anliegen=werbung#formular', label: 'Werbung anfragen' }}
+  />
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding-block: clamp(2.5rem, 1.5rem + 5vw, 5.5rem) clamp(3rem, 2rem + 5vw, 6rem);
+    background:
+      radial-gradient(60% 70% at 85% 30%, rgb(212 177 106 / 0.18), transparent 70%),
+      radial-gradient(50% 60% at 0% 100%, rgb(59 50 112 / 0.08), transparent 70%),
+      var(--c-cream-50);
+  }
+
+  .hero__grid {
+    display: grid;
+    gap: clamp(2.5rem, 2rem + 3vw, 4rem);
+    align-items: center;
+  }
+
+  .hero__text {
+    display: grid;
+    gap: var(--space-l);
+    justify-items: start;
+  }
+
+  .hero__title {
+    font-size: var(--step-5);
+    line-height: 1.04;
+  }
+
+  .hero__accent {
+    color: var(--c-gold-700);
+  }
+
+  .hero__visual {
+    position: relative;
+    width: min(100%, 30rem);
+    justify-self: center;
+  }
+
+  .hero__badge {
+    position: absolute;
+    left: -0.5rem;
+    bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1.2rem;
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow-m);
+  }
+
+  .hero__badge-icon {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    background: var(--c-cream-100);
+    color: var(--c-gold-700);
+  }
+
+  .hero__badge-label {
+    font-size: var(--step--1);
+    color: var(--c-ink-muted);
+  }
+
+  .hero__badge-time {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 560;
+    line-height: 1.2;
+  }
+
+  @media (min-width: 56rem) {
+    .hero__grid {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .hero__visual {
+      justify-self: end;
+    }
+
+    .hero__badge {
+      left: -2.5rem;
+      bottom: 3rem;
+    }
+  }
+
+  /* Kennzahlen */
+  .facts {
+    position: relative;
+    margin-top: calc(-1 * clamp(1.5rem, 1rem + 2vw, 2.5rem));
+  }
+
+  .facts__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    background: var(--c-white);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-l);
+    box-shadow: var(--shadow-m);
+    overflow: hidden;
+  }
+
+  .facts__item {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .facts__value {
+    font-family: var(--font-display);
+    font-size: var(--step-4);
+    font-weight: 500;
+    line-height: 1;
+    color: var(--c-royal-800);
+  }
+
+  .facts__label {
+    font-weight: 620;
+  }
+
+  .facts__detail {
+    display: block;
+    font-weight: 400;
+    font-size: var(--step--1);
+    color: var(--c-ink-muted);
+  }
+
+  .facts__item:nth-child(odd) {
+    border-right: 1px solid var(--c-line);
+  }
+
+  .facts__item:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  @media (min-width: 52rem) {
+    .facts__list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .facts__item {
+      border-bottom: 0;
+      border-right: 1px solid var(--c-line);
+    }
+
+    .facts__item:last-child {
+      border-right: 0;
+    }
+  }
+
+  /* Überschrift mit Link rechts */
+  .split-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-m) var(--space-xl);
+    margin-bottom: var(--space-xl);
+  }
+
+  .split-head .section-head {
+    margin-bottom: 0;
+  }
+
+  .split-head__link {
+    margin-bottom: 0.4rem;
+  }
+
+  .history__more {
+    margin-top: var(--space-xl);
+  }
+</style>

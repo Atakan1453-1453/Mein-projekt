@@ -1,0 +1,260 @@
+---
+/**
+ * Kopfbereich mit Hauptnavigation.
+ * - Desktop: Navigation in einer Zeile.
+ * - Mobil: aufklappbares Menü (Button mit aria-expanded). Ohne JavaScript
+ *   bleibt die Navigation einfach ausgeklappt sichtbar – nichts geht verloren.
+ */
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import { navigation } from '../config/site';
+
+const current = Astro.url.pathname;
+const isCurrent = (href: string) => (href === '/' ? current === '/' : current.startsWith(href));
+---
+
+<header class="site-header" data-site-header>
+  <div class="container site-header__inner">
+    <a class="site-header__brand" href="/">
+      <Logo />
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle hidden>
+      <span class="nav-toggle__icon nav-toggle__icon--open"><Icon name="menu" /></span>
+      <span class="nav-toggle__icon nav-toggle__icon--close"><Icon name="close" /></span>
+      <span class="nav-toggle__label">Menü</span>
+    </button>
+
+    <nav class="site-nav" id="site-nav" aria-label="Hauptnavigation" data-nav>
+      <ul class="site-nav__list" role="list">
+        {
+          navigation.map((item) => (
+            <li>
+              <a class="site-nav__link" href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="btn site-nav__cta" href="/kontakt/#formular">
+        Anfrage stellen
+        <Icon name="arrow-right" />
+      </a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  import { initNavigation } from '../scripts/navigation';
+  initNavigation();
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgb(252 250 246 / 0.94);
+    border-bottom: 1px solid transparent;
+    backdrop-filter: saturate(1.4) blur(12px);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  }
+
+  /* Dezenter Schatten, sobald gescrollt wird – reines CSS. */
+  @supports (animation-timeline: scroll()) {
+    .site-header {
+      animation: header-elevate linear both;
+      animation-timeline: scroll();
+      animation-range: 0 80px;
+    }
+  }
+
+  @keyframes header-elevate {
+    to {
+      border-bottom-color: var(--c-line);
+      box-shadow: 0 6px 24px rgb(28 25 48 / 0.06);
+    }
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    min-height: var(--header-height);
+    padding-block: var(--space-xs);
+  }
+
+  .site-header__brand {
+    display: inline-flex;
+    text-decoration: none;
+    border-radius: var(--radius-s);
+  }
+
+  .site-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-s) var(--space-l);
+  }
+
+  .site-nav__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.4rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-nav__link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding-inline: 0.7rem;
+    color: var(--c-ink);
+    font-weight: 560;
+    text-decoration: none;
+    border-radius: var(--radius-s);
+  }
+
+  .site-nav__link::after {
+    content: '';
+    position: absolute;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: 0.45rem;
+    height: 1.5px;
+    background: var(--c-gold-500);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .site-nav__link:hover {
+    color: var(--c-royal-800);
+  }
+
+  .site-nav__link:hover::after,
+  .site-nav__link[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+
+  .site-nav__link[aria-current='page'] {
+    color: var(--c-royal-800);
+    font-weight: 650;
+  }
+
+  .site-nav__cta {
+    min-height: 2.75rem;
+    padding: 0.6em 1.3em;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.95rem;
+    border: 1.5px solid var(--c-royal-800);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--c-royal-800);
+    font-weight: 620;
+    cursor: pointer;
+  }
+
+  .nav-toggle[hidden] {
+    display: none;
+  }
+
+  .nav-toggle__icon {
+    display: inline-flex;
+  }
+
+  .nav-toggle__icon :global(svg) {
+    width: 1.3rem;
+    height: 1.3rem;
+  }
+
+  .nav-toggle__icon--close,
+  .nav-toggle[aria-expanded='true'] .nav-toggle__icon--open {
+    display: none;
+  }
+
+  .nav-toggle[aria-expanded='true'] .nav-toggle__icon--close {
+    display: inline-flex;
+  }
+
+  /* Mobile Darstellung (nur wenn JavaScript aktiv ist, sonst bleibt alles sichtbar) */
+  @media (max-width: 63.99rem) and (scripting: enabled) {
+    .site-nav {
+      display: none;
+      flex-basis: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-m);
+      padding-block: var(--space-s) var(--space-l);
+      border-top: 1px solid var(--c-line);
+    }
+
+    .site-header[data-open] .site-nav {
+      display: flex;
+    }
+
+    .site-nav__list {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .site-nav__link {
+      width: 100%;
+      min-height: 3.25rem;
+      padding-inline: 0.25rem;
+      font-family: var(--font-display);
+      font-size: var(--step-2);
+      font-weight: 500;
+      border-bottom: 1px solid var(--c-line);
+      border-radius: 0;
+    }
+
+    .site-nav__link::after {
+      display: none;
+    }
+
+    .site-nav__link[aria-current='page'] {
+      color: var(--c-gold-700);
+    }
+
+    .site-header[data-open] {
+      max-height: 100dvh;
+      overflow-y: auto;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .site-header__inner {
+      flex-wrap: nowrap;
+      column-gap: var(--space-l);
+    }
+
+    .nav-toggle {
+      display: none !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .site-header[data-open] .site-nav {
+      animation: menu-in 0.35s var(--ease-out);
+    }
+  }
+
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+</style>

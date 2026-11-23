@@ -1,0 +1,23 @@
+---
+/**
+ * Gibt einen Wert aus der Konfiguration aus – oder einen Platzhalter, wenn
+ * der Wert (noch) `null` ist. Optional als Link (Telefon/E-Mail).
+ */
+import Placeholder from './Placeholder.astro';
+
+interface Props {
+  value: string | null | undefined;
+  label: string;
+  type?: 'text' | 'tel' | 'email';
+}
+
+const { value, label, type = 'text' } = Astro.props;
+const href =
+  value && type === 'tel'
+    ? `tel:${value.replace(/[^\d+]/g, '')}`
+    : value && type === 'email'
+      ? `mailto:${value}`
+      : undefined;
+---
+
+{value ? href ? <a href={href}>{value}</a> : <Fragment>{value}</Fragment> : <Placeholder label={label} />}

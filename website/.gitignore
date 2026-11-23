@@ -1,0 +1,17 @@
+# Abhängigkeiten & Build
+node_modules/
+dist/
+.astro/
+php/vendor/
+
+# Tests
+test-results/
+playwright-report/
+.tmp/
+php/.phpunit.cache/
+
+# Geheimnisse – NIE committen
+kontakt-config.php
+.env
+.env.*
+!.env.example

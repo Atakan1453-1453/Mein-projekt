@@ -1,0 +1,13 @@
+{
+  "$comment": "Zentrale Definition der HTTP-Sicherheits-Header. Daraus werden beim Build dist/.htaccess (Apache) und deploy/nginx-security-headers.conf erzeugt; der lokale Testserver (scripts/php-router.php) verwendet dieselben Werte. Wer externe Dienste einbindet (Karten, Videos …), muss die Content-Security-Policy hier erweitern.",
+  "headers": {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests",
+    "Strict-Transport-Security": "max-age=31536000",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin"
+  }
+}

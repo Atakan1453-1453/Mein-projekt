@@ -1,0 +1,78 @@
+{
+  "$comment": "Gemeinsame Formular-Definition für Website (Astro) UND Server (PHP). Beim Build wird diese Datei nach dist/api/lib/form-config.json kopiert. Änderungen hier wirken auf beiden Seiten – so laufen Browser- und Serverprüfung nie auseinander.",
+  "endpoint": "/api/kontakt.php",
+  "successPath": "/kontakt/danke/",
+  "errorPath": "/kontakt/fehler/",
+  "topics": [
+    {
+      "value": "vermietung",
+      "label": "Mietfläche / Vermietung",
+      "subject": "Mietanfrage"
+    },
+    {
+      "value": "werbung",
+      "label": "Werbung & Aktionen im Center",
+      "subject": "Werbung/Aktion"
+    },
+    {
+      "value": "presse",
+      "label": "Presseanfrage",
+      "subject": "Presse"
+    },
+    {
+      "value": "allgemein",
+      "label": "Allgemeine Anfrage",
+      "subject": "Allgemeine Anfrage"
+    }
+  ],
+  "fields": {
+    "name": {
+      "required": true,
+      "minLength": 2,
+      "maxLength": 100
+    },
+    "email": {
+      "required": true,
+      "maxLength": 254
+    },
+    "telefon": {
+      "required": false,
+      "maxLength": 30,
+      "pattern": "^[0-9+\\(\\)\\/\\-\\s]{6,30}$"
+    },
+    "firma": {
+      "required": false,
+      "maxLength": 120
+    },
+    "anliegen": {
+      "required": true
+    },
+    "branche": {
+      "required": false,
+      "maxLength": 120,
+      "onlyFor": "vermietung"
+    },
+    "flaeche": {
+      "required": false,
+      "maxLength": 40,
+      "onlyFor": "vermietung"
+    },
+    "zeitraum": {
+      "required": false,
+      "maxLength": 80,
+      "onlyFor": "vermietung"
+    },
+    "nachricht": {
+      "required": true,
+      "minLength": 20,
+      "maxLength": 5000
+    }
+  },
+  "spam": {
+    "honeypotField": "website",
+    "tokenField": "token",
+    "minSecondsToSubmit": 3,
+    "maxTokenAgeSeconds": 7200,
+    "maxLinksInMessage": 2
+  }
+}

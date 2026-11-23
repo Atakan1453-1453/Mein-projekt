@@ -1,0 +1,90 @@
+---
+/**
+ * Raster der Shops (Name + Kategorie). Daten aus src/config/site.ts.
+ */
+import Icon from './Icon.astro';
+
+interface Props {
+  shops: readonly { name: string; category: string }[];
+  /** Überschriften-Ebene der Shopnamen (Standard: h3). */
+  headingLevel?: 'h3' | 'h4';
+}
+
+const { shops, headingLevel = 'h3' } = Astro.props;
+const Heading = headingLevel;
+---
+
+<ul class="shop-grid" role="list">
+  {
+    shops.map((shop) => (
+      <li class="shop-card reveal">
+        <span class="shop-card__icon">
+          <Icon name="shop" size={22} />
+        </span>
+        <p class="shop-card__category">{shop.category}</p>
+        <Heading class="shop-card__name">{shop.name}</Heading>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100% / 2 - 0.5rem, 13.5rem), 1fr));
+    gap: var(--space-s);
+    padding: 0;
+    list-style: none;
+  }
+
+  .shop-card {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 0.35rem;
+    min-height: 7.5rem;
+    padding: clamp(0.85rem, 0.6rem + 1vw, 1.25rem);
+    background: var(--c-white);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-m);
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .shop-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--c-gold-500);
+    box-shadow: var(--shadow-m);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shop-card:hover {
+      transform: none;
+    }
+  }
+
+  .shop-card__icon {
+    display: inline-grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 0.4rem;
+    border-radius: 50%;
+    background: var(--c-cream-100);
+    color: var(--c-gold-700);
+  }
+
+  .shop-card__category {
+    font-size: 0.74rem;
+    font-weight: 650;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-gold-700);
+  }
+
+  .shop-card__name {
+    font-size: var(--step-1);
+    overflow-wrap: anywhere;
+    font-weight: 560;
+    line-height: 1.2;
+  }
+</style>

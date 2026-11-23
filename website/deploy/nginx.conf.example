@@ -1,0 +1,61 @@
+# ============================================================================
+# Beispiel-Konfiguration für nginx + PHP-FPM (nur nötig, wenn KEIN Apache-
+# Webhosting genutzt wird – bei Apache übernimmt dist/.htaccess alles).
+# Pfade, Domain und PHP-FPM-Socket anpassen.
+# ============================================================================
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name galeriekoenigshof.de www.galeriekoenigshof.de;
+    return 301 https://galeriekoenigshof.de$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name galeriekoenigshof.de;
+
+    ssl_certificate     /etc/letsencrypt/live/galeriekoenigshof.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/galeriekoenigshof.de/privkey.pem;
+
+    root /var/www/galeriekoenigshof/dist;   # Inhalt von dist/
+    index index.html;
+    charset utf-8;
+    server_tokens off;
+
+    # Sicherheits-Header (wird bei jedem Build neu erzeugt)
+    include /var/www/galeriekoenigshof/deploy/nginx-security-headers.conf;
+
+    # Versteckte Dateien und interne Ordner sperren
+    location ~ /\.            { deny all; }
+    location ^~ /api/lib/     { deny all; }
+
+    # Nur der Formular-Endpunkt darf PHP ausführen
+    location = /api/kontakt.php {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        # Konfiguration außerhalb des Webroots:
+        fastcgi_param KONTAKT_CONFIG /var/www/galeriekoenigshof/kontakt-config.php;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        client_max_body_size 64k;
+    }
+    location ~ \.php$ { return 404; }
+
+    # Gehashte Dateien dürfen dauerhaft gecacht werden
+    location ^~ /_astro/ {
+        include /var/www/galeriekoenigshof/deploy/nginx-security-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/index.html =404;
+    }
+
+    error_page 404 /404.html;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml application/manifest+json text/plain application/xml;
+}

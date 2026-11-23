@@ -1,0 +1,187 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import Timeline from '../components/Timeline.astro';
+import Placeholder from '../components/Placeholder.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Icon from '../components/Icon.astro';
+import { site } from '../config/site';
+---
+
+<BaseLayout
+  title="Über uns"
+  description="Die Geschichte der Galerie Königshof Mettmann: vom Kaufhaus an der Talstraße (1972) zum modernen Einkaufszentrum – neu eröffnet im November 2019."
+>
+  <PageHero
+    eyebrow="Über uns"
+    title="Ein traditionsreicher Standort – neu gedacht"
+    lead="Bereits 1972 entstand an der Talstraße in Mettmann ein Kaufhaus. Seit November 2019 präsentiert sich der Standort nach einem umfassenden Umbau als Galerie Königshof."
+  />
+
+  <section class="section" aria-labelledby="story-title">
+    <div class="container story">
+      <div class="section-head story__head">
+        <p class="eyebrow">Unsere Geschichte</p>
+        <h2 id="story-title">Vom Kaufhaus zur Galerie</h2>
+        <p>Drei Stationen prägen den Standort an der Talstraße.</p>
+      </div>
+      <Timeline />
+    </div>
+  </section>
+
+  <section class="section section--dark" aria-labelledby="relaunch-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Neustart 2019</p>
+        <h2 id="relaunch-title">Umgebaut im laufenden Betrieb</h2>
+        <p>
+          Am 7. November 2019 wurde die Galerie Königshof nach umfassender Modernisierung wiedereröffnet. Der Umbau erfolgte im
+          laufenden Betrieb.
+        </p>
+      </div>
+      <dl class="relaunch">
+        <div class="relaunch__item reveal">
+          <dt>Bauzeit im laufenden Betrieb</dt>
+          <dd>14 Monate</dd>
+        </div>
+        <div class="relaunch__item reveal">
+          <dt>Investition</dt>
+          <dd>über 10 Mio. €</dd>
+        </div>
+        <div class="relaunch__item reveal">
+          <dt>Wiedereröffnung</dt>
+          <dd>7. Nov. 2019</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="today-title">
+    <div class="container today">
+      <div class="section-head">
+        <p class="eyebrow">Das Center heute</p>
+        <h2 id="today-title">Einkaufen mitten in Mettmann</h2>
+        <p>
+          Die Galerie Königshof bündelt Mode, Drogerie, Apotheke, Bücher, Blumen und Gastronomie an einem Ort – mit
+          eigenem Parkhaus und über 400 Stellplätzen.
+        </p>
+      </div>
+      <ul class="today__list" role="list">
+        {
+          site.stats.map((stat) => (
+            <li class="card today__card reveal">
+              <p class="today__value">{stat.value}</p>
+              <p class="today__label">{stat.label}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section--sand" aria-labelledby="team-title">
+    <div class="container management">
+      <div class="section-head">
+        <p class="eyebrow">Center-Management</p>
+        <h2 id="team-title">Ihre Ansprechpartner vor Ort</h2>
+        <p>Das Center-Management ist Ihr Ansprechpartner für Vermietung, Werbung im Center und alle Fragen rund um die Galerie Königshof.</p>
+      </div>
+      <Placeholder label="Vorstellung des Center-Managements" block>
+        Name(n), Funktion und – nur mit Einwilligung – Foto der Ansprechpartner; optional ein kurzes Statement. Bitte vom
+        Center-Management liefern lassen.
+      </Placeholder>
+      <p class="management__cta">
+        <a class="link-arrow" href="/kontakt/#formular">
+          Kontakt aufnehmen
+          <Icon name="arrow-right" />
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <CtaBand
+    eyebrow="Besuchen Sie uns"
+    title="Wir freuen uns auf Ihren Besuch"
+    text={`${site.openingHours.days}, ${site.openingHours.time} · ${site.address.street}, ${site.address.postalCode} ${site.address.city}`}
+    primary={{ href: '/shops/', label: 'Shops entdecken' }}
+    secondary={{ href: '/kontakt/', label: 'Kontakt & Anfahrt' }}
+  />
+</BaseLayout>
+
+<style>
+  .story {
+    display: grid;
+    gap: var(--space-xl);
+  }
+
+  @media (min-width: 56rem) {
+    .story {
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: start;
+    }
+
+    .story__head {
+      position: sticky;
+      top: calc(var(--header-height) + 2rem);
+    }
+  }
+
+  .relaunch {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-m);
+  }
+
+  .relaunch__item {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    padding: var(--space-l);
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: var(--radius-m);
+    background: rgb(255 255 255 / 0.04);
+  }
+
+  .relaunch__item dd {
+    font-family: var(--font-display);
+    font-size: var(--step-4);
+    font-weight: 500;
+    line-height: 1.05;
+    color: var(--c-gold-300);
+  }
+
+  .relaunch__item dt {
+    color: var(--muted);
+  }
+
+  .today__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--space-m);
+    padding: 0;
+    list-style: none;
+  }
+
+  .today__value {
+    font-family: var(--font-display);
+    font-size: var(--step-4);
+    font-weight: 500;
+    line-height: 1.05;
+    color: var(--c-royal-800);
+  }
+
+  .today__label {
+    margin-top: var(--space-xs);
+    font-weight: 600;
+  }
+
+  .management {
+    display: grid;
+    gap: var(--space-l);
+  }
+
+  .management .section-head {
+    margin-bottom: 0;
+  }
+</style>

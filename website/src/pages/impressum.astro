@@ -1,0 +1,92 @@
+---
+/**
+ * IMPRESSUM nach § 5 Digitale-Dienste-Gesetz (DDG) und § 18 Abs. 2 MStV.
+ * Alle Angaben kommen aus `site.operator` in src/config/site.ts.
+ * → Fehlende Angaben werden als Platzhalter angezeigt.
+ * → Vor Veröffentlichung rechtlich prüfen lassen.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import Value from '../components/Value.astro';
+import Placeholder from '../components/Placeholder.astro';
+import { site } from '../config/site';
+
+const op = site.operator;
+---
+
+<BaseLayout title="Impressum" description="Impressum der Website der Galerie Königshof Mettmann – Anbieterkennzeichnung nach § 5 DDG.">
+  <PageHero eyebrow="Rechtliches" title="Impressum" />
+
+  <section class="section">
+    <div class="container">
+      <div class="prose">
+        <Placeholder label="Rechtliche Prüfung des Impressums" block>
+          Dieses Impressum ist ein technisch vorbereiteter Entwurf. Alle Angaben müssen vom Betreiber geliefert und vor der
+          Veröffentlichung rechtlich geprüft werden.
+        </Placeholder>
+
+        <h2>Angaben gemäß § 5 DDG</h2>
+        <p>
+          <Value value={op.legalName} label="Name und Rechtsform des Betreibers" /><br />
+          <Value value={op.street} label="Straße und Hausnummer" /><br />
+          <Value value={op.postalCode} label="PLZ" />
+          <Value value={op.city} label="Ort" />
+        </p>
+
+        <h3>Vertreten durch</h3>
+        <p><Value value={op.representatives} label="Vertretungsberechtigte Person(en), z. B. Geschäftsführung" /></p>
+
+        <h3>Kontakt</h3>
+        <dl>
+          <dt>Telefon</dt>
+          <dd><Value value={op.phone} label="Telefon" type="tel" /></dd>
+          <dt>E-Mail</dt>
+          <dd><Value value={op.email} label="E-Mail" type="email" /></dd>
+        </dl>
+
+        <h3>Registereintrag</h3>
+        <dl>
+          <dt>Registergericht</dt>
+          <dd><Value value={op.registerCourt} label="Registergericht" /></dd>
+          <dt>Registernummer</dt>
+          <dd><Value value={op.registerNumber} label="Registernummer" /></dd>
+        </dl>
+
+        <h3>Umsatzsteuer-ID</h3>
+        <p>
+          Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz:
+          <Value value={op.vatId} label="USt-IdNr. (falls vorhanden)" />
+        </p>
+
+        <h3>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h3>
+        <p><Value value={op.editorialResponsible} label="Name und Anschrift der verantwortlichen Person" /></p>
+
+        <h2>Verbraucherstreitbeilegung</h2>
+        <Placeholder label="Hinweis nach § 36 VSBG" block>
+          Vom Betreiber zu entscheiden. Üblicher Text, falls zutreffend: „Wir sind nicht bereit oder verpflichtet, an
+          Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.“ Hinweis: Die EU-Plattform zur
+          Online-Streitbeilegung wurde am 20. Juli 2025 eingestellt – ein Link darauf ist nicht mehr erforderlich.
+        </Placeholder>
+
+        <h2>Haftung für Links</h2>
+        <p>
+          Diese Website enthält Links zu externen Websites Dritter (z. B. OpenStreetMap), auf deren Inhalte wir keinen
+          Einfluss haben. Für diese fremden Inhalte ist stets der jeweilige Anbieter oder Betreiber der Seiten
+          verantwortlich. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.
+        </p>
+
+        <h2>Urheberrecht und Bildnachweise</h2>
+        <p>
+          Die Inhalte dieser Website unterliegen dem deutschen Urheberrecht. Vervielfältigung, Bearbeitung und Verbreitung
+          außerhalb der Grenzen des Urheberrechts bedürfen der schriftlichen Zustimmung des jeweiligen Rechteinhabers.
+        </p>
+        <p>
+          Bildnachweise: <Placeholder label="Fotografen/Rechteinhaber der verwendeten Fotos" />
+        </p>
+        <p>
+          Verwendete Schriften: Fraunces und Inter (SIL Open Font License 1.1), lokal auf diesem Server gespeichert.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

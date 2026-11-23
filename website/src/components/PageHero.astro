@@ -1,0 +1,89 @@
+---
+/**
+ * Einleitungsbereich der Unterseiten: Eyebrow, H1, Lead-Text.
+ * Rechts erscheint ein dekoratives Bogen-Motiv (aus dem Logo abgeleitet).
+ */
+interface Props {
+  eyebrow: string;
+  title: string;
+  lead?: string;
+}
+
+const { eyebrow, title, lead } = Astro.props;
+---
+
+<section class="page-hero" aria-labelledby="page-title">
+  <div class="container page-hero__inner">
+    <div class="page-hero__text">
+      <p class="eyebrow enter">{eyebrow}</p>
+      <h1 id="page-title" class="enter delay-1">{title}</h1>
+      {lead && <p class="lead enter delay-2">{lead}</p>}
+      <slot />
+    </div>
+    <svg class="page-hero__deco" viewBox="0 0 240 300" aria-hidden="true" focusable="false">
+      <path d="M10 300V120a110 110 0 0 1 220 0v180" />
+      <path d="M40 300V125a80 80 0 0 1 160 0v175" />
+      <path d="M70 300V130a50 50 0 0 1 100 0v170" />
+    </svg>
+  </div>
+</section>
+
+<style>
+  .page-hero {
+    position: relative;
+    overflow: hidden;
+    padding-block: clamp(3rem, 2rem + 5vw, 6rem) clamp(2.5rem, 2rem + 3vw, 4.5rem);
+    background:
+      radial-gradient(90% 120% at 100% 0%, rgb(212 177 106 / 0.16), transparent 60%),
+      var(--c-cream-100);
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .page-hero__inner {
+    position: relative;
+    display: grid;
+    align-items: end;
+  }
+
+  .page-hero__text {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--space-m);
+    max-width: 48rem;
+  }
+
+  .page-hero__deco {
+    position: absolute;
+    right: -2rem;
+    bottom: calc(-1 * clamp(2.5rem, 2rem + 3vw, 4.5rem));
+    width: clamp(9rem, 6rem + 14vw, 17rem);
+    height: auto;
+    fill: none;
+    stroke: var(--c-gold-500);
+    stroke-width: 1.2;
+    opacity: 0.55;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .page-hero__deco path {
+      stroke-dasharray: 900;
+      stroke-dashoffset: 900;
+      animation: draw 2.2s var(--ease-out) forwards;
+    }
+
+    .page-hero__deco path:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .page-hero__deco path:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+</style>

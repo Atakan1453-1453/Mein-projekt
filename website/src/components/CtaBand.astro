@@ -1,0 +1,96 @@
+---
+/**
+ * Auffälliger Handlungsaufruf (z. B. „Mietanfrage stellen“).
+ */
+import Icon from './Icon.astro';
+
+interface Link {
+  href: string;
+  label: string;
+}
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  text: string;
+  primary: Link;
+  secondary?: Link;
+}
+
+const { eyebrow, title, text, primary, secondary } = Astro.props;
+---
+
+<section class="section section--tight">
+  <div class="container">
+    <div class="cta-band surface-dark reveal">
+      <svg class="cta-band__deco" viewBox="0 0 300 300" aria-hidden="true" focusable="false">
+        <path d="M20 300V150a130 130 0 0 1 260 0v150"></path>
+        <path d="M60 300V155a90 90 0 0 1 180 0v145"></path>
+        <path d="M100 300V160a50 50 0 0 1 100 0v140"></path>
+      </svg>
+      <div class="cta-band__content">
+        <p class="eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+        <p class="cta-band__text">{text}</p>
+        <div class="btn-row">
+          <a class="btn btn--gold" href={primary.href}>
+            {primary.label}
+            <Icon name="arrow-right" />
+          </a>
+          {
+            secondary && (
+              <a class="btn btn--ghost" href={secondary.href}>
+                {secondary.label}
+              </a>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-band {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(2rem, 1.2rem + 4vw, 4.5rem);
+    border-radius: var(--radius-l);
+    background:
+      radial-gradient(70% 120% at 100% 100%, rgb(212 177 106 / 0.2), transparent 60%),
+      linear-gradient(150deg, var(--c-royal-800), var(--c-royal-950));
+  }
+
+  .cta-band__content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--space-m);
+    max-width: 40rem;
+  }
+
+  .cta-band h2 {
+    font-size: var(--step-4);
+  }
+
+  .cta-band__text {
+    color: var(--muted);
+    font-size: var(--step-1);
+  }
+
+  .cta-band .btn-row {
+    margin-top: var(--space-xs);
+  }
+
+  .cta-band__deco {
+    position: absolute;
+    right: -1.5rem;
+    bottom: 0;
+    width: clamp(10rem, 8rem + 14vw, 20rem);
+    height: auto;
+    fill: none;
+    stroke: var(--c-gold-500);
+    stroke-width: 1.2;
+    opacity: 0.4;
+  }
+</style>

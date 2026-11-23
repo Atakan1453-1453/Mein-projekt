@@ -1,0 +1,208 @@
+---
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import Value from './Value.astro';
+import { site, navigation, legalNavigation } from '../config/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer surface-dark">
+  <div class="container">
+    <div class="site-footer__grid">
+      <div class="site-footer__brand">
+        <a href="/" class="site-footer__logo">
+          <Logo inverted />
+        </a>
+        <p class="site-footer__tagline">{site.tagline}</p>
+        <address class="site-footer__address">
+          {site.name}<br />
+          {site.address.street}<br />
+          {`${site.address.postalCode} ${site.address.city}`}
+        </address>
+      </div>
+
+      <div>
+        <h2 class="site-footer__heading">Öffnungszeiten</h2>
+        <p class="site-footer__hours">
+          <span>{site.openingHours.days}</span>
+          <strong>{site.openingHours.time}</strong>
+        </p>
+        <p class="site-footer__small">{site.openingHours.note}</p>
+        <p class="site-footer__small">Parkhaus: 24 Stunden geöffnet</p>
+      </div>
+
+      <nav aria-label="Seiten im Footer">
+        <h2 class="site-footer__heading">Seiten</h2>
+        <ul class="site-footer__list" role="list">
+          {
+            navigation.map((item) => (
+              <li>
+                <a href={item.href}>{item.label}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div>
+        <h2 class="site-footer__heading">Kontakt</h2>
+        <ul class="site-footer__list site-footer__contact" role="list">
+          <li>
+            <Icon name="phone" size={18} />
+            <span><Value value={site.contact.phone} label="Telefon" type="tel" /></span>
+          </li>
+          <li>
+            <Icon name="mail" size={18} />
+            <span><Value value={site.contact.email} label="E-Mail" type="email" /></span>
+          </li>
+          <li>
+            <Icon name="pin" size={18} />
+            <a href={site.links.map} rel="noopener noreferrer" target="_blank">
+              Route planen<span class="visually-hidden"> (OpenStreetMap, öffnet in neuem Tab)</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="site-footer__bottom">
+      <p>© {year} {site.name} {site.city}</p>
+      <ul class="site-footer__legal" role="list">
+        {
+          legalNavigation.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    padding-block: var(--space-2xl) var(--space-l);
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgb(212 177 106 / 0.1), transparent 55%),
+      var(--c-royal-900);
+    font-size: var(--step--1);
+  }
+
+  .site-footer::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--c-gold-500), transparent);
+  }
+
+  .site-footer__grid {
+    display: grid;
+    gap: var(--space-xl) var(--space-l);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  }
+
+  .site-footer__brand {
+    display: grid;
+    gap: var(--space-m);
+    align-content: start;
+  }
+
+  .site-footer__logo {
+    display: inline-flex;
+    width: max-content;
+    text-decoration: none;
+  }
+
+  .site-footer__tagline {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    color: var(--c-gold-200);
+  }
+
+  .site-footer__address {
+    font-style: normal;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .site-footer__heading {
+    margin-bottom: var(--space-m);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-gold-400);
+  }
+
+  .site-footer__hours {
+    display: grid;
+    gap: 0.15rem;
+    font-size: var(--step-0);
+  }
+
+  .site-footer__hours strong {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: 500;
+  }
+
+  .site-footer__small {
+    margin-top: var(--space-xs);
+    color: var(--muted);
+  }
+
+  .site-footer__list {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+  }
+
+  .site-footer__contact li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .site-footer__contact :global(svg) {
+    flex: none;
+    color: var(--c-gold-400);
+  }
+
+  .site-footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s) var(--space-l);
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-l);
+    border-top: 1px solid rgb(255 255 255 / 0.14);
+    color: var(--muted);
+  }
+
+  .site-footer__legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-l);
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+</style>

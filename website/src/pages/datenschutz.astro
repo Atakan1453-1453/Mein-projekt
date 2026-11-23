@@ -1,0 +1,185 @@
+---
+/**
+ * DATENSCHUTZERKLÄRUNG (Art. 13 DSGVO)
+ * Beschreibt genau die Verarbeitung, die diese Website technisch durchführt:
+ *  - Server-Logfiles beim Hoster
+ *  - Kontaktformular (Versand per E-Mail, Spam-Schutz mit gehashter IP)
+ *  - KEINE Cookies, KEIN Tracking, KEINE eingebetteten Dienste Dritter,
+ *    Schriften lokal.
+ * Wer neue Dienste einbindet (Karten, Videos, Analyse …), MUSS diese Seite
+ * anpassen und ggf. eine Einwilligungslösung ergänzen (siehe WARTUNG.md).
+ * → Vor Veröffentlichung rechtlich prüfen lassen.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import Value from '../components/Value.astro';
+import Placeholder from '../components/Placeholder.astro';
+import { site } from '../config/site';
+
+const op = site.operator;
+const pv = site.privacy;
+---
+
+<BaseLayout
+  title="Datenschutzerklärung"
+  description="Datenschutzerklärung der Website der Galerie Königshof Mettmann: keine Cookies, kein Tracking, Informationen zum Kontaktformular und zu Ihren Rechten."
+>
+  <PageHero eyebrow="Rechtliches" title="Datenschutzerklärung" lead={`Stand: ${pv.lastUpdated}`} />
+
+  <section class="section">
+    <div class="container">
+      <div class="prose">
+        <Placeholder label="Rechtliche Prüfung der Datenschutzerklärung" block>
+          Technisch vorbereiteter Entwurf, der die tatsächliche Datenverarbeitung dieser Website beschreibt. Vor der
+          Veröffentlichung vervollständigen und rechtlich prüfen lassen.
+        </Placeholder>
+
+        <h2>Das Wichtigste in Kürze</h2>
+        <ul>
+          <li>Diese Website setzt <strong>keine Cookies</strong> und verwendet <strong>keine Analyse- oder Tracking-Dienste</strong>.</li>
+          <li>Es werden <strong>keine Inhalte Dritter eingebettet</strong> (keine Karten, Videos oder Social-Media-Plugins). Schriften werden von unserem eigenen Server geladen.</li>
+          <li>Personenbezogene Daten verarbeiten wir nur, soweit dies technisch für den Betrieb der Website nötig ist oder Sie uns über das Kontaktformular bzw. per E-Mail kontaktieren.</li>
+        </ul>
+
+        <h2>1. Verantwortlicher</h2>
+        <p>Verantwortlich für die Datenverarbeitung auf dieser Website ist:</p>
+        <p>
+          <Value value={op.legalName} label="Name und Rechtsform des Betreibers" /><br />
+          <Value value={op.street} label="Straße und Hausnummer" /><br />
+          <Value value={op.postalCode} label="PLZ" />
+          <Value value={op.city} label="Ort" /><br />
+          Telefon: <Value value={op.phone} label="Telefon" type="tel" /><br />
+          E-Mail: <Value value={op.email} label="E-Mail" type="email" />
+        </p>
+
+        <h2>2. Datenschutzbeauftragte/r</h2>
+        <p>
+          <Value value={pv.dataProtectionOfficer} label="Kontakt der/des Datenschutzbeauftragten oder Hinweis, dass keine Benennungspflicht besteht" />
+        </p>
+
+        <h2 id="hosting">3. Hosting und Server-Logfiles</h2>
+        <p>
+          Diese Website wird bei folgendem Anbieter gehostet: <Value value={pv.hostingProvider} label="Name und Anschrift des Webhosters" />.
+          Mit dem Hoster besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO.
+        </p>
+        <p>Beim Aufruf jeder Seite verarbeitet der Webserver automatisch folgende Daten, die Ihr Browser übermittelt:</p>
+        <ul>
+          <li>IP-Adresse des anfragenden Geräts</li>
+          <li>Datum und Uhrzeit des Zugriffs</li>
+          <li>aufgerufene Seite bzw. Datei, übertragene Datenmenge und HTTP-Statuscode</li>
+          <li>Referrer-URL (zuvor besuchte Seite), soweit übermittelt</li>
+          <li>verwendeter Browser und Betriebssystem (User-Agent)</li>
+        </ul>
+        <p>
+          <strong>Zweck:</strong> Auslieferung der Website, Gewährleistung der Stabilität und Sicherheit (z. B. Abwehr von
+          Angriffen). <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. f DSGVO; unser berechtigtes Interesse liegt in
+          einem sicheren und funktionsfähigen Webangebot. <strong>Speicherdauer:</strong> Die Logfiles werden nach
+          <Value value={pv.logRetentionDays} label="Anzahl Tage laut Hoster" /> Tagen gelöscht, sofern sie nicht zur
+          Aufklärung eines konkreten Sicherheitsvorfalls benötigt werden.
+        </p>
+
+        <h2>4. SSL-/TLS-Verschlüsselung</h2>
+        <p>
+          Diese Website nutzt aus Sicherheitsgründen eine TLS-Verschlüsselung (erkennbar an „https://“ und dem Schloss-Symbol
+          im Browser). Daten, die Sie an uns übermitteln – etwa über das Kontaktformular –, können so nicht von Dritten
+          mitgelesen werden.
+        </p>
+
+        <h2 id="kontaktformular">5. Kontaktformular und Kontakt per E-Mail</h2>
+        <p>
+          Wenn Sie uns über das Kontaktformular eine Anfrage senden, verarbeiten wir die von Ihnen eingegebenen Daten:
+          Anliegen, Name, E-Mail-Adresse, Nachricht sowie freiwillig Firma, Telefonnummer und – bei Mietanfragen –
+          Branche, Flächenbedarf und gewünschten Starttermin. Pflichtfelder sind gekennzeichnet; alle übrigen Angaben sind
+          freiwillig.
+        </p>
+        <p>
+          <strong>Zweck:</strong> Bearbeitung und Beantwortung Ihrer Anfrage. <strong>Rechtsgrundlage:</strong> Art. 6
+          Abs. 1 lit. b DSGVO, soweit Ihre Anfrage auf den Abschluss eines Vertrags (z. B. Mietvertrag) gerichtet ist;
+          im Übrigen Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Beantwortung von Anfragen).
+        </p>
+        <p>
+          <strong>Übermittlung:</strong> Das Formular wird verschlüsselt an unseren Server übertragen und von dort als
+          E-Mail an das Postfach des Center-Managements weitergeleitet. E-Mail-Anbieter:
+          <Value value={pv.mailProvider} label="Name des E-Mail-Anbieters" /> (Auftragsverarbeiter nach Art. 28 DSGVO). Die
+          Formulardaten werden auf dem Webserver nicht dauerhaft gespeichert. Eine automatische Eingangsbestätigung an Ihre
+          E-Mail-Adresse versenden wir bewusst nicht.
+        </p>
+        <p>
+          <strong>Speicherdauer:</strong> Wir löschen Ihre Anfrage, sobald sie abschließend bearbeitet ist und keine
+          Anschlusskommunikation zu erwarten ist, sofern keine gesetzlichen Aufbewahrungspflichten (z. B. für
+          Geschäftsbriefe nach § 257 HGB bzw. § 147 AO) entgegenstehen.
+        </p>
+        <p>
+          Gleiches gilt, wenn Sie uns direkt per E-Mail oder telefonisch kontaktieren.
+        </p>
+
+        <h2 id="spamschutz">6. Spam-Schutz des Kontaktformulars</h2>
+        <p>
+          Um das Formular vor automatisierten Spam-Einsendungen zu schützen, verwenden wir ausschließlich eigene Verfahren
+          ohne Drittanbieter und ohne Cookies:
+        </p>
+        <ul>
+          <li>ein für Menschen unsichtbares Formularfeld, das nur von Bots ausgefüllt wird,</li>
+          <li>ein signierter Zeitstempel, mit dem erkannt wird, ob ein Formular unrealistisch schnell abgeschickt wurde,</li>
+          <li>
+            eine Begrenzung der Anzahl von Anfragen pro Zeitraum. Dazu wird Ihre IP-Adresse <strong>nicht im Klartext</strong>,
+            sondern nur als mit einem geheimen Schlüssel erzeugter Hash-Wert zusammen mit den Zeitpunkten der Absendungen
+            auf dem Server gespeichert. Einträge, die älter als 60 Minuten sind, werden automatisch gelöscht.
+          </li>
+        </ul>
+        <p><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Abwehr von Missbrauch).</p>
+
+        <h2>7. Keine Cookies, kein Tracking, lokale Schriften</h2>
+        <p>
+          Diese Website speichert keine Informationen auf Ihrem Endgerät und liest keine aus (§ 25 TDDDG); eine
+          Einwilligungsabfrage („Cookie-Banner“) ist deshalb nicht erforderlich. Wir verwenden keine Analyse-, Werbe- oder
+          Tracking-Werkzeuge. Die verwendeten Schriftarten sind auf unserem Server gespeichert; beim Seitenaufruf wird keine
+          Verbindung zu externen Schriftanbietern (z. B. Google Fonts) hergestellt.
+        </p>
+
+        <h2>8. Links zu externen Websites</h2>
+        <p>
+          Für die Routenplanung verlinken wir auf OpenStreetMap. Erst wenn Sie diesen Link anklicken, wird eine Verbindung
+          zu den Servern der OpenStreetMap Foundation hergestellt; es gelten dann deren
+          <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener noreferrer" target="_blank">Datenschutzbestimmungen<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>.
+        </p>
+
+        <h2>9. Ihre Rechte</h2>
+        <p>Sie haben gegenüber uns folgende Rechte hinsichtlich der Sie betreffenden personenbezogenen Daten:</p>
+        <ul>
+          <li>Recht auf Auskunft (Art. 15 DSGVO)</li>
+          <li>Recht auf Berichtigung (Art. 16 DSGVO)</li>
+          <li>Recht auf Löschung (Art. 17 DSGVO)</li>
+          <li>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</li>
+          <li>Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</li>
+        </ul>
+        <p class="note">
+          <strong>Widerspruchsrecht (Art. 21 DSGVO):</strong> Soweit wir Daten auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO
+          verarbeiten, können Sie aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit Widerspruch gegen
+          die Verarbeitung einlegen.
+        </p>
+        <p>
+          Zur Ausübung Ihrer Rechte genügt eine formlose Nachricht an die oben genannten Kontaktdaten.
+        </p>
+
+        <h2>10. Beschwerderecht bei einer Aufsichtsbehörde</h2>
+        <p>
+          Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), insbesondere in dem
+          Mitgliedstaat Ihres Aufenthaltsorts, Ihres Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Zuständig für
+          Nordrhein-Westfalen ist die Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen
+          (LDI NRW), Kavalleriestraße 2–4, 40213 Düsseldorf,
+          <a href="https://www.ldi.nrw.de" rel="noopener noreferrer" target="_blank">www.ldi.nrw.de<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>.
+        </p>
+
+        <h2>11. Automatisierte Entscheidungen</h2>
+        <p>Eine automatisierte Entscheidungsfindung einschließlich Profiling (Art. 22 DSGVO) findet nicht statt.</p>
+
+        <h2>12. Änderungen</h2>
+        <p>
+          Wir passen diese Datenschutzerklärung an, sobald sich die Datenverarbeitung auf dieser Website ändert, etwa wenn
+          neue Funktionen hinzukommen. Es gilt die jeweils hier veröffentlichte Fassung.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

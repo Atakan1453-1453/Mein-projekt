@@ -1,0 +1,138 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import ShopGrid from '../components/ShopGrid.astro';
+import Placeholder from '../components/Placeholder.astro';
+import VisitInfo from '../components/VisitInfo.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Icon from '../components/Icon.astro';
+import { site } from '../config/site';
+
+---
+
+<BaseLayout
+  title="Shops & Services"
+  description="Shops in der Galerie Königshof Mettmann: Mode, Schuhe, Drogerie, Apotheke, Bücher, Blumen und Gastronomie – plus Parkhaus mit über 400 Stellplätzen."
+>
+  <PageHero
+    eyebrow="Shops & Services"
+    title="Über 20 Shops unter einem Dach"
+    lead="Von Mode und Schuhen über Drogerie und Apotheke bis zu Büchern, Blumen und Gastronomie – erledigen Sie Ihre Einkäufe bequem an einem Ort."
+  >
+    <nav class="category-nav enter delay-3" aria-label="Kategorien">
+      <ul role="list">
+        <li><a href="#shops">Shops</a></li>
+        <li><a href="#oeffnungszeiten">Öffnungszeiten &amp; Parken</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#vermietung">Vermietung</a></li>
+      </ul>
+    </nav>
+  </PageHero>
+
+  <section class="section" id="shops" aria-labelledby="shops-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Shop-Verzeichnis</p>
+        <h2 id="shops-title">Shops in der Galerie Königshof</h2>
+        <p>Eine Auswahl unserer Mieter – von Mode bis Gastronomie.</p>
+      </div>
+
+      <ShopGrid shops={site.shops} />
+
+      <p class="note shops-note">
+        <Icon name="info" size={20} />
+        <span>
+          Auswahl, Stand {site.shopsAsOf}. Das Mieterangebot kann sich ändern – einzelne Shops haben ggf. abweichende
+          Öffnungszeiten.
+        </span>
+      </p>
+      <Placeholder label="Vollständiges Shop-Verzeichnis" block>
+        Bitte die aktuelle, vollständige Mieterliste vom Center-Management in src/config/site.ts eintragen.
+      </Placeholder>
+    </div>
+  </section>
+
+  <section class="section section--sand" id="oeffnungszeiten" aria-labelledby="visit-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Öffnungszeiten &amp; Parken</p>
+        <h2 id="visit-title">Gut erreichbar – auch mit dem Auto</h2>
+      </div>
+      <VisitInfo />
+      <p class="fees">
+        <strong>Parkgebühren:</strong>
+        {site.parking.fees ?? <Placeholder label="Parkgebühren / Tarife des Parkhauses" />}
+      </p>
+    </div>
+  </section>
+
+  <section class="section" id="services" aria-labelledby="services-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Services</p>
+        <h2 id="services-title">Services im Center</h2>
+        <p>Informationen zu Barrierefreiheit und weiteren Angeboten vor Ort.</p>
+      </div>
+      <Placeholder label="Services im Center" block>
+        Z. B. barrierefreier Zugang, Aufzüge, Toiletten, Wickelraum, Fundsachen – nur Angebote aufführen, die das
+        Center-Management bestätigt hat.
+      </Placeholder>
+    </div>
+  </section>
+
+  <div id="vermietung">
+    <CtaBand
+      eyebrow="Vermietung"
+      title="Ihr Geschäft in der Galerie Königshof"
+      text="Sie suchen eine Einzelhandels- oder Gastronomiefläche in Mettmann? Schildern Sie uns Ihr Konzept – das Center-Management meldet sich bei Ihnen."
+      primary={{ href: '/kontakt/?anliegen=vermietung#formular', label: 'Mietanfrage stellen' }}
+    />
+  </div>
+</BaseLayout>
+
+<style>
+  .category-nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+    padding: 0;
+    list-style: none;
+  }
+
+  .category-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-pill);
+    background: var(--c-white);
+    color: var(--c-ink);
+    font-weight: 560;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .category-nav a:hover {
+    border-color: var(--c-gold-500);
+    background: var(--c-cream-50);
+  }
+
+  .shops-note {
+    display: flex;
+    gap: var(--space-s);
+    align-items: flex-start;
+    margin-block: var(--space-xl) var(--space-m);
+  }
+
+  .shops-note :global(svg) {
+    flex: none;
+    margin-top: 0.2rem;
+    color: var(--c-gold-700);
+  }
+
+  .fees {
+    margin-top: var(--space-l);
+  }
+</style>

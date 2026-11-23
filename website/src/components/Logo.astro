@@ -1,0 +1,102 @@
+---
+/**
+ * Wortmarke „Galerie Königshof“ mit Kronen-Signet.
+ * ENTWURF: Falls ein offizielles Logo existiert, hier durch die Logodatei
+ * ersetzen (SVG bevorzugt) – siehe WARTUNG.md, Abschnitt „Logo austauschen“.
+ */
+import { site } from '../config/site';
+
+interface Props {
+  /** Helle Variante für dunkle Hintergründe (Footer). */
+  inverted?: boolean;
+}
+
+const { inverted = false } = Astro.props;
+---
+
+<span class:list={['logo', { 'logo--inverted': inverted }]}>
+  <svg class="logo__mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+    <path class="logo__arch" d="M6 38V18a14 14 0 0 1 28 0v20" fill="none" stroke-width="1.6"></path>
+    <path
+      class="logo__crown"
+      d="M11.5 27.5 10 16.5l5.3 4L20 12.5l4.7 8 5.3-4-1.5 11Z"
+      stroke-width="1.6"
+      stroke-linejoin="round"></path>
+    <path class="logo__base" d="M11 31h18" stroke-width="1.6" stroke-linecap="round"></path>
+  </svg>
+  <span class="logo__text">
+    <span class="logo__name">{site.name}</span>{' '}
+    <span class="logo__city">{site.city}</span>
+  </span>
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: var(--c-royal-900);
+  }
+
+  .logo__mark {
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: none;
+  }
+
+  .logo__arch,
+  .logo__base {
+    stroke: var(--c-gold-500);
+  }
+
+  .logo__crown {
+    fill: var(--c-royal-800);
+    stroke: var(--c-royal-800);
+  }
+
+  .logo__text {
+    display: grid;
+    line-height: 1;
+  }
+
+  .logo__name {
+    font-family: var(--font-display);
+    font-size: 1.32rem;
+    font-weight: 560;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .logo__city {
+    margin-top: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 650;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--c-gold-700);
+  }
+
+  @media (max-width: 22.5rem) {
+    .logo__name {
+      font-size: 1.15rem;
+    }
+
+    .logo__mark {
+      width: 2.2rem;
+      height: 2.2rem;
+    }
+  }
+
+  .logo--inverted {
+    color: var(--c-white);
+  }
+
+  .logo--inverted .logo__crown {
+    fill: var(--c-gold-400);
+    stroke: var(--c-gold-400);
+  }
+
+  .logo--inverted .logo__city {
+    color: var(--c-gold-300);
+  }
+</style>

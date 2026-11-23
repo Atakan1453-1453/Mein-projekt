@@ -1,0 +1,157 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ContactForm from '../../components/ContactForm.astro';
+import Icon from '../../components/Icon.astro';
+import Value from '../../components/Value.astro';
+import { site } from '../../config/site';
+---
+
+<BaseLayout
+  title="Kontakt"
+  description="Kontakt zum Center-Management der Galerie Königshof Mettmann: Anfragen zu Mietflächen, Werbung im Center, Presse und allgemeine Fragen. Talstraße 10, 40822 Mettmann."
+>
+  <PageHero
+    eyebrow="Kontakt"
+    title="Sprechen Sie mit dem Center-Management"
+    lead="Ob Mietfläche, Werbung im Center, Presseanfrage oder eine allgemeine Frage – schreiben Sie uns. Wir melden uns so schnell wie möglich bei Ihnen."
+  />
+
+  <section class="section" aria-labelledby="form-title">
+    <div class="container contact">
+      <div class="contact__form card">
+        <h2 id="form-title" class="contact__title">Ihre Anfrage</h2>
+        <ContactForm />
+      </div>
+
+      <aside class="contact__aside" aria-label="Kontaktdaten und Anfahrt">
+        <div class="contact__block">
+          <h2 class="contact__subtitle">Kontaktdaten</h2>
+          <ul class="contact__list" role="list">
+            <li>
+              <Icon name="phone" />
+              <span><span class="visually-hidden">Telefon: </span><Value value={site.contact.phone} label="Telefon" type="tel" /></span>
+            </li>
+            <li>
+              <Icon name="mail" />
+              <span><span class="visually-hidden">E-Mail: </span><Value value={site.contact.email} label="E-Mail" type="email" /></span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="contact__block">
+          <h2 class="contact__subtitle">Anschrift</h2>
+          <address>
+            {site.name}<br />
+            {site.address.street}<br />
+            {`${site.address.postalCode} ${site.address.city}`}
+          </address>
+          <a class="link-arrow" href={site.links.map} target="_blank" rel="noopener noreferrer">
+            Route planen <span class="visually-hidden">(OpenStreetMap, öffnet in neuem Tab)</span>
+            <Icon name="arrow-up-right" />
+          </a>
+          <p class="contact__small">
+            Wir binden bewusst keine Karte ein: So werden beim Aufruf dieser Seite keine Daten an Kartendienste übertragen.
+          </p>
+        </div>
+
+        <div class="contact__block">
+          <h2 class="contact__subtitle">Öffnungszeiten</h2>
+          <p>
+            {site.openingHours.days}<br />
+            <strong class="contact__hours">{site.openingHours.time}</strong>
+          </p>
+          <p class="contact__small">{site.openingHours.note}</p>
+          <p class="contact__small">Parkhaus: 24 Stunden geöffnet, über 400 Stellplätze.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .contact {
+    display: grid;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+
+  @media (min-width: 60rem) {
+    .contact {
+      grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 1fr);
+    }
+
+    .contact__aside {
+      position: sticky;
+      top: calc(var(--header-height) + 1.5rem);
+    }
+  }
+
+  .contact__form {
+    padding: clamp(1.25rem, 0.8rem + 2.5vw, 2.75rem);
+  }
+
+  .contact__title {
+    margin-bottom: var(--space-l);
+    font-size: var(--step-3);
+  }
+
+  .contact__aside {
+    display: grid;
+    gap: var(--space-l);
+  }
+
+  .contact__block {
+    display: grid;
+    gap: var(--space-s);
+    padding-bottom: var(--space-l);
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .contact__block:last-child {
+    border-bottom: 0;
+  }
+
+  .contact__subtitle {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-gold-700);
+  }
+
+  .contact__list {
+    display: grid;
+    gap: var(--space-s);
+    padding: 0;
+    list-style: none;
+  }
+
+  .contact__list li {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .contact__list :global(svg) {
+    flex: none;
+    color: var(--c-gold-700);
+  }
+
+  address {
+    font-style: normal;
+    line-height: 1.7;
+  }
+
+  .contact__hours {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: 500;
+  }
+
+  .contact__small {
+    font-size: var(--step--1);
+    color: var(--c-ink-muted);
+  }
+</style>

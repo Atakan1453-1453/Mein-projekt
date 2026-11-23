@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+---
+
+<BaseLayout title="Vielen Dank für Ihre Anfrage" description="Ihre Anfrage an die Galerie Königshof wurde übermittelt." noindex>
+  <section class="section status-page" aria-labelledby="status-title">
+    <div class="container container--narrow status">
+      <span class="status__icon status__icon--ok"><Icon name="check" size={32} /></span>
+      <h1 id="status-title">Vielen Dank für Ihre Anfrage!</h1>
+      <p class="lead">
+        Ihre Nachricht ist bei uns eingegangen. Das Center-Management meldet sich so schnell wie möglich bei Ihnen.
+      </p>
+      <div class="btn-row">
+        <a class="btn" href="/">Zur Startseite <Icon name="arrow-right" /></a>
+        <a class="btn btn--ghost" href="/shops/">Shops entdecken</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .status {
+    display: grid;
+    gap: var(--space-l);
+    justify-items: start;
+  }
+
+  .status__icon {
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 999px 999px 14px 14px;
+  }
+
+  .status__icon--ok {
+    background: var(--c-success-bg);
+    color: var(--c-success);
+  }
+
+  .status h1 {
+    font-size: var(--step-4);
+  }
+</style>

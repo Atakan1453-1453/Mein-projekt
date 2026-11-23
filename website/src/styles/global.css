@@ -1,0 +1,602 @@
+/* ==========================================================================
+   GLOBALE STYLES – Galerie Königshof
+   --------------------------------------------------------------------------
+   Aufbau:
+   1. Schriften (lokal gehostet, keine Verbindung zu Google & Co.)
+   2. Design-Tokens (Farben, Typografie, Abstände) – hier zentral anpassen
+   3. Reset & Basis
+   4. Layout-Helfer (Container, Sektionen)
+   5. Wiederverwendbare Bausteine (Buttons, Eyebrow, Platzhalter, Prosa)
+   6. Animationen (respektieren „Bewegung reduzieren“)
+   Komponentenspezifische Styles stehen direkt in der jeweiligen .astro-Datei.
+   ========================================================================== */
+
+/* 1. Schriften ------------------------------------------------------------ */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/fraunces-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/inter-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Metrisch angepasste Ersatzschrift: verhindert Layoutsprünge beim Laden. */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 107.06%;
+  ascent-override: 90.49%;
+  descent-override: 22.56%;
+  line-gap-override: 0%;
+}
+
+/* 2. Design-Tokens ------------------------------------------------------- */
+:root {
+  /* Farben – Kontraste geprüft (WCAG AA) für die vorgesehenen Kombinationen */
+  --c-ink: #1c1930; /* Fließtext auf hellem Grund */
+  --c-ink-muted: #565169; /* Sekundärtext auf hellem Grund (≥ 6:1) */
+  --c-royal-950: #15112b;
+  --c-royal-900: #1f1940; /* dunkle Sektionen, Footer */
+  --c-royal-800: #2c2456; /* Primär-Buttons */
+  --c-royal-700: #3b3270; /* Links, Fokusrahmen auf hell */
+  --c-royal-200: #cfc9e4;
+  --c-royal-100: #ebe8f4;
+  --c-gold-200: #efdfb9;
+  --c-gold-300: #e3c98f; /* Fokusrahmen auf dunkel */
+  --c-gold-400: #d4b16a; /* Akzente & Buttons auf dunkel */
+  --c-gold-500: #c49a48; /* reine Deko-Linien */
+  --c-gold-700: #7a5c1c; /* Gold-Text auf hell (≥ 5,5:1) */
+  --c-cream-50: #fcfaf6; /* Seitenhintergrund */
+  --c-cream-100: #f6f0e6;
+  --c-cream-200: #eee5d5;
+  --c-line: #e2d8c6;
+  --c-field-border: #857c94; /* Formularrahmen (≥ 3:1 zum Hintergrund) */
+  --c-white: #ffffff;
+  --c-error: #a3261b;
+  --c-error-bg: #fbeceb;
+  --c-success: #1f5c39;
+  --c-success-bg: #e8f3ec;
+
+  /* Typografie */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', 'Inter Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Fluide Schriftgrößen: 360 px → 1280 px Viewport */
+  --step--1: clamp(0.84rem, 0.82rem + 0.1vw, 0.9rem);
+  --step-0: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --step-1: clamp(1.15rem, 1.08rem + 0.35vw, 1.35rem);
+  --step-2: clamp(1.35rem, 1.2rem + 0.7vw, 1.75rem);
+  --step-3: clamp(1.65rem, 1.35rem + 1.35vw, 2.4rem);
+  --step-4: clamp(2rem, 1.5rem + 2.3vw, 3.35rem);
+  --step-5: clamp(2.45rem, 1.65rem + 3.6vw, 4.6rem);
+
+  /* Abstände */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-s: 0.75rem;
+  --space-m: 1.25rem;
+  --space-l: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: clamp(3.5rem, 2.5rem + 4vw, 6rem);
+  --section-space: clamp(4rem, 2.8rem + 6vw, 8rem);
+
+  /* Formen & Effekte */
+  --radius-s: 8px;
+  --radius-m: 16px;
+  --radius-l: 28px;
+  --radius-pill: 999px;
+  --radius-arch: 999px 999px var(--radius-m) var(--radius-m);
+  --shadow-s: 0 1px 2px rgb(28 25 48 / 0.06), 0 2px 8px rgb(28 25 48 / 0.05);
+  --shadow-m: 0 2px 6px rgb(28 25 48 / 0.06), 0 14px 36px rgb(28 25 48 / 0.1);
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Layout */
+  --container: 1200px;
+  --gutter: clamp(1rem, 0.5rem + 3vw, 2.5rem);
+  --header-height: 4.5rem;
+
+  /* Kontextabhängige Variablen (werden in dunklen Sektionen überschrieben) */
+  --focus: var(--c-royal-700);
+  --accent-text: var(--c-gold-700);
+  --muted: var(--c-ink-muted);
+
+  color-scheme: light;
+}
+
+/* 3. Reset & Basis -------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-height) + 1rem);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.65;
+  color: var(--c-ink);
+  background: var(--c-cream-50);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01';
+  overflow-x: clip;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+img,
+svg,
+picture,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 560;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+/* Lange deutsche Wörter auf schmalen Bildschirmen trennen statt überlaufen */
+@media (max-width: 30rem) {
+  h1,
+  h2 {
+    hyphens: auto;
+  }
+}
+
+h1 {
+  font-size: var(--step-5);
+  font-weight: 520;
+}
+
+h2 {
+  font-size: var(--step-4);
+}
+
+h3 {
+  font-size: var(--step-2);
+}
+
+h4 {
+  font-size: var(--step-1);
+}
+
+p,
+li,
+dd {
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+}
+
+a {
+  color: var(--c-royal-700);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+a:hover {
+  color: var(--c-royal-900);
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--c-gold-200);
+  color: var(--c-ink);
+}
+
+strong {
+  font-weight: 650;
+}
+
+/* Nur für Screenreader sichtbar */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* „Zum Inhalt springen“ – erster Tab-Stopp jeder Seite */
+.skip-link {
+  position: absolute;
+  top: var(--space-s);
+  left: var(--space-s);
+  z-index: 1000;
+  padding: var(--space-s) var(--space-m);
+  background: var(--c-royal-900);
+  color: var(--c-white);
+  font-weight: 600;
+  border-radius: var(--radius-s);
+  transform: translateY(-200%);
+  transition: transform 0.2s var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+  outline-color: var(--c-gold-300);
+  color: var(--c-white);
+}
+
+/* 4. Layout -------------------------------------------------------------- */
+.container {
+  width: min(100% - 2 * var(--gutter), var(--container));
+  margin-inline: auto;
+}
+
+.container--narrow {
+  --container: 780px;
+}
+
+.section {
+  padding-block: var(--section-space);
+}
+
+.section--tight {
+  padding-block: calc(var(--section-space) * 0.6);
+}
+
+.section--sand {
+  background: var(--c-cream-100);
+}
+
+.section--dark,
+.surface-dark {
+  --focus: var(--c-gold-300);
+  --accent-text: var(--c-gold-400);
+  --muted: #c9c4da;
+  background: var(--c-royal-900);
+  color: #f5f2fb;
+}
+
+:is(.section--dark, .surface-dark) a:not(.btn) {
+  color: var(--c-gold-300);
+}
+
+:is(.section--dark, .surface-dark) a:not(.btn):hover {
+  color: var(--c-white);
+}
+
+.section-head {
+  display: grid;
+  gap: var(--space-m);
+  max-width: 46rem;
+  margin-bottom: var(--space-xl);
+}
+
+.section-head--center {
+  margin-inline: auto;
+  text-align: center;
+  justify-items: center;
+}
+
+.section-head p {
+  color: var(--muted);
+  font-size: var(--step-1);
+  line-height: 1.55;
+}
+
+/* 5. Bausteine ------------------------------------------------------------ */
+
+/* Kleine Überschrift über Headlines */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75em;
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 2rem;
+  height: 1px;
+  background: currentColor;
+  flex: none;
+}
+
+.lead {
+  font-size: var(--step-1);
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 40rem;
+}
+
+/* Buttons */
+.btn {
+  --btn-bg: var(--c-royal-800);
+  --btn-fg: var(--c-white);
+  --btn-border: var(--btn-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  min-height: 3rem; /* ≥ 44 px Touch-Ziel */
+  padding: 0.8em 1.6em;
+  border: 1.5px solid var(--btn-border);
+  border-radius: var(--radius-pill);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-weight: 620;
+  font-size: var(--step-0);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.25s var(--ease-out),
+    box-shadow 0.25s ease;
+}
+
+.btn:hover {
+  --btn-bg: var(--c-royal-700);
+  color: var(--btn-fg);
+  text-decoration: none;
+  box-shadow: var(--shadow-m);
+}
+
+.btn svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.btn:hover svg {
+  transform: translateX(3px);
+}
+
+.btn--gold {
+  --btn-bg: var(--c-gold-400);
+  --btn-fg: var(--c-royal-950);
+}
+
+.btn--gold:hover {
+  --btn-bg: var(--c-gold-300);
+}
+
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--c-royal-800);
+  --btn-border: var(--c-royal-800);
+}
+
+.btn--ghost:hover {
+  --btn-bg: var(--c-royal-800);
+  --btn-fg: var(--c-white);
+}
+
+:is(.section--dark, .surface-dark) .btn--ghost {
+  --btn-fg: var(--c-white);
+  --btn-border: rgb(255 255 255 / 0.55);
+}
+
+:is(.section--dark, .surface-dark) .btn--ghost:hover {
+  --btn-bg: var(--c-white);
+  --btn-fg: var(--c-royal-900);
+  --btn-border: var(--c-white);
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+}
+
+/* Textlink mit Pfeil */
+.link-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  font-weight: 620;
+  text-decoration: none;
+}
+
+.link-arrow svg {
+  width: 1.1em;
+  height: 1.1em;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.link-arrow:hover svg {
+  transform: translateX(4px);
+}
+
+/* Karten */
+.card {
+  position: relative;
+  background: var(--c-white);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-m);
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  box-shadow: var(--shadow-s);
+}
+
+/* Platzhalter für noch fehlende Angaben – vor dem Livegang ersetzen!
+   `npm run check:launch` findet alle Elemente mit [data-placeholder]. */
+.placeholder {
+  display: inline;
+  padding: 0.05em 0.45em;
+  border: 1.5px dashed var(--c-gold-700);
+  border-radius: 6px;
+  background: rgb(239 223 185 / 0.35);
+  color: var(--c-gold-700);
+  font-size: 0.92em;
+  font-style: italic;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+:is(.section--dark, .surface-dark) .placeholder {
+  color: var(--c-gold-200);
+  border-color: var(--c-gold-400);
+  background: rgb(212 177 106 / 0.12);
+}
+
+.placeholder--block {
+  display: block;
+  padding: var(--space-m);
+  font-style: normal;
+}
+
+/* Fließtext (Impressum, Datenschutz) */
+.prose {
+  max-width: 46rem;
+}
+
+.prose > * + * {
+  margin-top: 1em;
+}
+
+.prose h2 {
+  font-size: var(--step-3);
+  margin-top: 2.2em;
+}
+
+.prose h3 {
+  font-size: var(--step-1);
+  margin-top: 1.8em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.3em;
+}
+
+.prose li + li {
+  margin-top: 0.35em;
+}
+
+.prose dl {
+  display: grid;
+  grid-template-columns: minmax(9rem, max-content) 1fr;
+  gap: 0.4em 1.25em;
+}
+
+.prose dt {
+  font-weight: 650;
+}
+
+@media (max-width: 34rem) {
+  .prose dl {
+    grid-template-columns: 1fr;
+  }
+
+  .prose dd + dt {
+    margin-top: 0.6em;
+  }
+}
+
+.note {
+  padding: var(--space-m);
+  border-left: 3px solid var(--c-gold-500);
+  background: var(--c-cream-100);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  color: var(--c-ink);
+}
+
+/* 6. Animationen --------------------------------------------------------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Einblenden beim Seitenaufruf (Hero) */
+  .enter {
+    animation: fade-up 0.9s var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 110ms + 80ms);
+  }
+
+  /* Staffelung per Klasse (keine style-Attribute → CSP-konform) */
+  .delay-1 { --i: 1; }
+  .delay-2 { --i: 2; }
+  .delay-3 { --i: 3; }
+  .delay-4 { --i: 4; }
+  .delay-5 { --i: 5; }
+
+  /* Dezentes Einblenden beim Scrollen – reines CSS, ohne JavaScript.
+     Browser ohne Unterstützung zeigen die Inhalte einfach sofort an. */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: fade-up linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 65%;
+    }
+  }
+}
