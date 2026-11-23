@@ -65,6 +65,14 @@ const { eyebrow, title, lead } = Astro.props;
     opacity: 0.55;
   }
 
+  /* Schmale Bildschirme: Motiv dezenter, damit es den Text nicht stört */
+  @media (max-width: 40rem) {
+    .page-hero__deco {
+      right: -3.5rem;
+      opacity: 0.25;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .page-hero__deco path {
       stroke-dasharray: 900;
